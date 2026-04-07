@@ -1,0 +1,103 @@
+using HRMS.API.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace HRMS.API.Data
+{
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+
+        public DbSet<Employee> Employees { get; set; }
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<Attendance> Attendances { get; set; }
+        public DbSet<Leave> Leaves { get; set; }
+        public DbSet<Payroll> Payrolls { get; set; }
+        public DbSet<PerformanceReview> PerformanceReviews { get; set; }
+        public DbSet<EmployeeDocument> EmployeeDocuments { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            // Employee Configuration
+            builder.Entity<Employee>(entity =>
+            {
+                entity.HasIndex(e => e.EmployeeId).IsUnique();
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasOne(e => e.Department)
+                      .WithMany(d => d.Employees)
+                      .HasForeignKey(e => e.DepartmentId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Manager)
+                      .WithMany()
+                      .HasForeignKey(e => e.ManagerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Attendance Configuration
+            builder.Entity<Attendance>(entity =>
+            {
+                entity.HasIndex(a => new { a.EmployeeId, a.Date }).IsUnique();
+                entity.HasOne(a => a.Employee)
+                      .WithMany()
+                      .HasForeignKey(a => a.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Leave Configuration
+            builder.Entity<Leave>(entity =>
+            {
+                entity.HasOne(l => l.Employee)
+                      .WithMany()
+                      .HasForeignKey(l => l.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(l => l.ApprovedBy)
+                      .WithMany()
+                      .HasForeignKey(l => l.ApprovedById)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Payroll Configuration
+            builder.Entity<Payroll>(entity =>
+            {
+                entity.HasOne(p => p.Employee)
+                      .WithMany()
+                      .HasForeignKey(p => p.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Performance Review Configuration
+            builder.Entity<PerformanceReview>(entity =>
+            {
+                entity.HasOne(p => p.Employee)
+                      .WithMany()
+                      .HasForeignKey(p => p.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(p => p.ReviewedBy)
+                      .WithMany()
+                      .HasForeignKey(p => p.ReviewedById)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Employee Document Configuration
+            builder.Entity<EmployeeDocument>(entity =>
+            {
+                entity.HasOne(d => d.Employee)
+                      .WithMany(e => e.Documents)
+                      .HasForeignKey(d => d.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Employee OnboardingToken index for fast lookup
+            builder.Entity<Employee>()
+                   .HasIndex(e => e.OnboardingToken)
+                   .IsUnique()
+                   .HasFilter("[OnboardingToken] IS NOT NULL");
+        }
+    }
+}
