@@ -68,7 +68,8 @@ builder.Services.AddSwaggerGen(c =>
 
 // Database Configuration
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") 
+        ?? throw new InvalidOperationException("ConnectionStrings__DefaultConnection environment variable is required.")));
 
 // Identity Configuration
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

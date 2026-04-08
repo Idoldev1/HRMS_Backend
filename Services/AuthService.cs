@@ -300,7 +300,7 @@ namespace HRMS.API.Services
             if (numericEmployeeId.HasValue)
                 claims.Add(new Claim("EmployeeId", numericEmployeeId.Value.ToString()));
 
-            var expiryMinutes = Convert.ToDouble(jwtSettings["ExpirationInMinutes"] ?? "1440");
+            var expiryMinutes = Convert.ToDouble(jwtSettings["ExpirationInMinutes"] ?? "20");
 
             var token = new JwtSecurityToken(
                 issuer: jwtSettings["Issuer"],
