@@ -68,10 +68,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Database Configuration
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required. Set it via appsettings or the ConnectionStrings__DefaultConnection environment variable.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
-        Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") 
-            ?? throw new InvalidOperationException("ConnectionStrings__DefaultConnection environment variable is required."),
+        connectionString,
         sqlOptions => sqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(30),
@@ -143,6 +146,7 @@ builder.Services.AddScoped<ILeaveRepository, LeaveRepository>();
 builder.Services.AddScoped<IPayrollRepository, PayrollRepository>();
 builder.Services.AddScoped<IPerformanceRepository, PerformanceRepository>();
 builder.Services.AddScoped<IOnboardingRepository, OnboardingRepository>();
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 
 // Application / domain services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -154,6 +158,7 @@ builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IPayslipService, PayslipService>();
 builder.Services.AddScoped<IPerformanceService, PerformanceService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<ICompanyRegistrationService, CompanyRegistrationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();

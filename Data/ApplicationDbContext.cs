@@ -14,6 +14,7 @@ namespace HRMS.API.Data
 
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Department> Departments { get; set; }
+        public DbSet<Company> Companies { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<Leave> Leaves { get; set; }
         public DbSet<Payroll> Payrolls { get; set; }
@@ -92,6 +93,19 @@ namespace HRMS.API.Data
                       .HasForeignKey(d => d.EmployeeId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            // Company Configuration
+            builder.Entity<Company>(entity =>
+            {
+                entity.HasIndex(c => c.Email).IsUnique();
+            });
+
+            // Employee -> Company relationship
+            builder.Entity<Employee>()
+                   .HasOne(e => e.Company)
+                   .WithMany(c => c.Employees)
+                   .HasForeignKey(e => e.CompanyId)
+                   .OnDelete(DeleteBehavior.Restrict);
 
             // Employee OnboardingToken index for fast lookup
             builder.Entity<Employee>()

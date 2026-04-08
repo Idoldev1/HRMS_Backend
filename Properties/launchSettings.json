@@ -1,25 +1,6 @@
 {
   "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
-    "http": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5000",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__DefaultConnection": "Server=PSALMSON\\SQLEXPRESS;Database=HRMSDB;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true;",
-        "JwtSettings__SecretKey": "YourSuperSecretKeyForJWTTokenGeneration12345",
-        "JwtSettings__Issuer": "HRMS",
-        "JwtSettings__Audience": "HRMSUsers",
-        "BrevoSettings__ApiKey": "YourBrevoApiKeyHere",
-        "BrevoSettings__FromEmail": "idoldev01@gmail.com",
-        "BrevoSettings__FromName": "HRMS System",
-        "ClientSettings__BaseUrl": "http://localhost:3000",
-        "ClientSettings__AllowedOrigins": "http://localhost:3000"
-      }
-    },
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,

@@ -221,5 +221,21 @@ namespace HRMS.API.DTOs
                 Position = employee.Position,
             };
         }
+
+        public static CompanyDto ToDto(this Company company) => new()
+        {
+            Id = company.Id,
+            Name = company.Name,
+            RegistrationNumber = company.RegistrationNumber,
+            Industry = company.Industry,
+            Email = company.Email,
+            Phone = company.Phone,
+            Website = company.Website,
+            Street = company.Street,
+            City = company.City,
+            State = company.State,
+            ZipCode = company.ZipCode,
+            Country = company.Country,
+        };
     }
 }

@@ -20,7 +20,9 @@ namespace HRMS.API.Validations
                 .WithMessage($"Leave type must be one of: {string.Join(", ", AllowedLeaveTypes)}.");
 
             RuleFor(x => x.StartDate)
-                .NotEmpty().WithMessage("Start date is required.");
+                .NotEmpty().WithMessage("Start date is required.")
+                .GreaterThan(DateTime.Today)
+                .WithMessage("Start date must be a future date.");
 
             RuleFor(x => x.EndDate)
                 .NotEmpty().WithMessage("End date is required.")

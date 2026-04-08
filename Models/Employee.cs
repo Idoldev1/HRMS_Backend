@@ -51,6 +51,15 @@ namespace HRMS.API.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Salary { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal GrossSalary { get; set; }
+
+        [Column(TypeName = "decimal(18,4)")]
+        public decimal FederalTaxRate { get; set; }
+
+        [Column(TypeName = "decimal(18,4)")]
+        public decimal InsuranceRate { get; set; }
+
         [Required]
         public DateTime HireDate { get; set; } = DateTime.Now;
 
@@ -66,6 +75,11 @@ namespace HRMS.API.Models
 
         [ForeignKey("ManagerId")]
         public Employee? Manager { get; set; }
+
+        public int? CompanyId { get; set; }
+
+        [ForeignKey("CompanyId")]
+        public Company? Company { get; set; }
 
         public string? EmergencyContactName { get; set; }
         public string? EmergencyContactRelationship { get; set; }
