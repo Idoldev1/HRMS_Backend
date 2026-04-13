@@ -237,5 +237,64 @@ namespace HRMS.API.DTOs
             ZipCode = company.ZipCode,
             Country = company.Country,
         };
+
+        public static JobPostingDto ToDto(this JobPosting job) => new()
+        {
+            Id = job.Id,
+            Title = job.Title,
+            Description = job.Description,
+            Location = job.Location,
+            EmploymentType = job.EmploymentType,
+            WorkMode = job.WorkMode,
+            SalaryMin = job.SalaryMin,
+            SalaryMax = job.SalaryMax,
+            Department = job.Department,
+            Requirements = job.Requirements,
+            Responsibilities = job.Responsibilities,
+            Status = job.Status,
+            ClosingDate = job.ClosingDate,
+            PostedById = job.PostedById,
+            CreatedAt = job.CreatedAt,
+            UpdatedAt = job.UpdatedAt,
+            ApplicationCount = job.Applications?.Count ?? 0,
+        };
+
+        public static JobPostingDetailDto ToDetailDto(this JobPosting job) => new()
+        {
+            Id = job.Id,
+            Title = job.Title,
+            Description = job.Description,
+            Location = job.Location,
+            EmploymentType = job.EmploymentType,
+            WorkMode = job.WorkMode,
+            SalaryMin = job.SalaryMin,
+            SalaryMax = job.SalaryMax,
+            Department = job.Department,
+            Requirements = job.Requirements,
+            Responsibilities = job.Responsibilities,
+            Status = job.Status,
+            ClosingDate = job.ClosingDate,
+            PostedById = job.PostedById,
+            CreatedAt = job.CreatedAt,
+            UpdatedAt = job.UpdatedAt,
+            ApplicationCount = job.Applications?.Count ?? 0,
+            Applications = job.Applications?.Select(a => a.ToDto()).ToList() ?? new(),
+        };
+
+        public static JobApplicationDto ToDto(this JobApplication app) => new()
+        {
+            Id = app.Id,
+            JobPostingId = app.JobPostingId,
+            CandidateName = app.CandidateName,
+            CandidateEmail = app.CandidateEmail,
+            CandidatePhone = app.CandidatePhone,
+            CvFilePath = app.CvFilePath,
+            CoverLetter = app.CoverLetter,
+            Status = app.Status,
+            Notes = app.Notes,
+            AppliedAt = app.AppliedAt,
+            UpdatedAt = app.UpdatedAt,
+            JobTitle = app.JobPosting?.Title,
+        };
     }
 }

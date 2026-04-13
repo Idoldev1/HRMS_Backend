@@ -40,7 +40,7 @@ namespace HRMS.API.Controllers
         public async Task<IActionResult> UpdateAttendance(int id, Attendance attendance)
         {
             await _attendanceService.UpdateAttendanceAsync(id, attendance);
-            return NoContent();
+            return NoContent(); //Colins Onyetube
         }
     }
 }

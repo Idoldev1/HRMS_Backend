@@ -20,6 +20,8 @@ namespace HRMS.API.Data
         public DbSet<Payroll> Payrolls { get; set; }
         public DbSet<PerformanceReview> PerformanceReviews { get; set; }
         public DbSet<EmployeeDocument> EmployeeDocuments { get; set; }
+        public DbSet<JobPosting> JobPostings { get; set; }
+        public DbSet<JobApplication> JobApplications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -112,6 +114,22 @@ namespace HRMS.API.Data
                    .HasIndex(e => e.OnboardingToken)
                    .IsUnique()
                    .HasFilter("[OnboardingToken] IS NOT NULL");
+
+            // Job Posting Configuration
+            builder.Entity<JobPosting>(entity =>
+            {
+                entity.HasIndex(j => j.Status);
+            });
+
+            // Job Application Configuration
+            builder.Entity<JobApplication>(entity =>
+            {
+                entity.HasOne(a => a.JobPosting)
+                      .WithMany(j => j.Applications)
+                      .HasForeignKey(a => a.JobPostingId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(a => new { a.JobPostingId, a.CandidateEmail }).IsUnique();
+            });
         }
     }
 }

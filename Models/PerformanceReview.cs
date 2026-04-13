@@ -29,23 +29,23 @@ namespace HRMS.API.Models
         public Employee? ReviewedBy { get; set; }
 
         [Required]
-        [Range(1, 5)]
-        public int OverallRating { get; set; }
+        [Range(0.5, 5)]
+        public double OverallRating { get; set; }
 
-        [Range(1, 5)]
-        public int? QualityRating { get; set; }
+        [Range(0.5, 5)]
+        public double? QualityRating { get; set; }
 
-        [Range(1, 5)]
-        public int? ProductivityRating { get; set; }
+        [Range(0.5, 5)]
+        public double? ProductivityRating { get; set; }
 
-        [Range(1, 5)]
-        public int? CommunicationRating { get; set; }
+        [Range(0.5, 5)]
+        public double? CommunicationRating { get; set; }
 
-        [Range(1, 5)]
-        public int? TeamworkRating { get; set; }
+        [Range(0.5, 5)]
+        public double? TeamworkRating { get; set; }
 
-        [Range(1, 5)]
-        public int? LeadershipRating { get; set; }
+        [Range(0.5, 5)]
+        public double? LeadershipRating { get; set; }
 
         public string? Strengths { get; set; }
 

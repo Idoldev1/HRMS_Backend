@@ -72,12 +72,12 @@ namespace HRMS.API.DTOs
         public int ReviewedById { get; set; }
         public DateTime ReviewPeriodStartDate { get; set; }
         public DateTime ReviewPeriodEndDate { get; set; }
-        public int OverallRating { get; set; }
-        public int? QualityRating { get; set; }
-        public int? ProductivityRating { get; set; }
-        public int? CommunicationRating { get; set; }
-        public int? TeamworkRating { get; set; }
-        public int? LeadershipRating { get; set; }
+        public double OverallRating { get; set; }
+        public double? QualityRating { get; set; }
+        public double? ProductivityRating { get; set; }
+        public double? CommunicationRating { get; set; }
+        public double? TeamworkRating { get; set; }
+        public double? LeadershipRating { get; set; }
         public string? Strengths { get; set; }
         public string? AreasForImprovement { get; set; }
         public string? ReviewerComments { get; set; }
@@ -87,5 +87,47 @@ namespace HRMS.API.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public EmployeeSummaryDto? Employee { get; set; }
+    }
+
+    public class JobPostingDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string EmploymentType { get; set; } = string.Empty;
+        public string WorkMode { get; set; } = string.Empty;
+        public decimal? SalaryMin { get; set; }
+        public decimal? SalaryMax { get; set; }
+        public string Department { get; set; } = string.Empty;
+        public string? Requirements { get; set; }
+        public string? Responsibilities { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime? ClosingDate { get; set; }
+        public int? PostedById { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public int ApplicationCount { get; set; }
+    }
+
+    public class JobPostingDetailDto : JobPostingDto
+    {
+        public List<JobApplicationDto> Applications { get; set; } = new();
+    }
+
+    public class JobApplicationDto
+    {
+        public int Id { get; set; }
+        public int JobPostingId { get; set; }
+        public string CandidateName { get; set; } = string.Empty;
+        public string CandidateEmail { get; set; } = string.Empty;
+        public string? CandidatePhone { get; set; }
+        public string? CvFilePath { get; set; }
+        public string? CoverLetter { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string? Notes { get; set; }
+        public DateTime AppliedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string? JobTitle { get; set; }
     }
 }
