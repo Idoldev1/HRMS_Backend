@@ -20,7 +20,7 @@ namespace HRMS.API.Repositories
         public async Task<JobApplication?> GetByJobAndEmailAsync(int jobPostingId, string email)
         {
             return await _context.JobApplications
-                .FirstOrDefaultAsync(a => a.JobPostingId == jobPostingId && a.CandidateEmail == email);
+                .FirstOrDefaultAsync(a => a.JobPostingId == jobPostingId && a.NormalizedCandidateEmail == email);
         }
 
         public async Task<JobApplication?> GetByIdWithJobAsync(int id)

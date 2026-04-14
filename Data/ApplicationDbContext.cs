@@ -119,6 +119,7 @@ namespace HRMS.API.Data
             builder.Entity<JobPosting>(entity =>
             {
                 entity.HasIndex(j => j.Status);
+                entity.HasIndex(j => j.JobPostingId).IsUnique();
             });
 
             // Job Application Configuration
@@ -128,7 +129,7 @@ namespace HRMS.API.Data
                       .WithMany(j => j.Applications)
                       .HasForeignKey(a => a.JobPostingId)
                       .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(a => new { a.JobPostingId, a.CandidateEmail }).IsUnique();
+                entity.HasIndex(a => new { a.JobPostingId, a.NormalizedCandidateEmail }).IsUnique();
             });
         }
     }

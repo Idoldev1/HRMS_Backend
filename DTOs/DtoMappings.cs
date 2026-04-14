@@ -241,6 +241,7 @@ namespace HRMS.API.DTOs
         public static JobPostingDto ToDto(this JobPosting job) => new()
         {
             Id = job.Id,
+            JobPostingId = job.JobPostingId,
             Title = job.Title,
             Description = job.Description,
             Location = job.Location,
@@ -262,6 +263,7 @@ namespace HRMS.API.DTOs
         public static JobPostingDetailDto ToDetailDto(this JobPosting job) => new()
         {
             Id = job.Id,
+            JobPostingId = job.JobPostingId,
             Title = job.Title,
             Description = job.Description,
             Location = job.Location,
@@ -285,6 +287,7 @@ namespace HRMS.API.DTOs
         {
             Id = app.Id,
             JobPostingId = app.JobPostingId,
+            JobPostingPublicId = app.JobPosting?.JobPostingId ?? string.Empty,
             CandidateName = app.CandidateName,
             CandidateEmail = app.CandidateEmail,
             CandidatePhone = app.CandidatePhone,

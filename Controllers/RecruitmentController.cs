@@ -98,29 +98,32 @@ namespace HRMS.API.Controllers
             return Ok(jobs);
         }
 
-        [HttpGet("public/jobs/{id}")]
+        [HttpGet("public/jobs/{jobPostingId}")]
         [AllowAnonymous]
-        public async Task<ActionResult<JobPostingDto>> GetPublicJobById(int id)
+        public async Task<ActionResult<JobPostingDto>> GetPublicJobById(string jobPostingId)
         {
-            var job = await _recruitmentService.GetPublicJobPostingByIdAsync(id);
+            var job = await _recruitmentService.GetPublicJobPostingByIdAsync(jobPostingId);
             if (job == null) return NotFound();
             return Ok(job);
         }
 
-        [HttpPost("public/jobs/{jobId}/apply")]
+        [HttpPost("public/jobs/{jobPostingId}/apply")]
         [AllowAnonymous]
         [RequestSizeLimit(15 * 1024 * 1024)]
         public async Task<ActionResult<JobApplicationDto>> Apply(
-            int jobId,
-            [FromForm] string candidateName,
-            [FromForm] string candidateEmail,
-            [FromForm] string? candidatePhone,
-            [FromForm] string? coverLetter,
-            IFormFile? cv)
+            string jobPostingId,
+            [FromForm] ApplyForJobRequest request)
         {
-            var app = await _recruitmentService.ApplyForJobAsync(
-                jobId, candidateName, candidateEmail, candidatePhone, coverLetter, cv);
-            return Created(string.Empty, app);
+            var result = await _recruitmentService.ApplyForJobAsync(jobPostingId, request);
+            if (!result.Success)
+            {
+                if (result.NotFound)
+                    return NotFound((result.ErrorMessage ?? "Job posting not found.").ToMessageDto());
+
+                return BadRequest((result.ErrorMessage ?? "Unable to submit application.").ToMessageDto());
+            }
+
+            return Created(string.Empty, result.Application!);
         }
     }
 }

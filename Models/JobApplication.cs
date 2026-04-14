@@ -23,6 +23,10 @@ namespace HRMS.API.Models
         [StringLength(200)]
         public string CandidateEmail { get; set; } = string.Empty;
 
+        [Required]
+        [StringLength(200)]
+        public string NormalizedCandidateEmail { get; set; } = string.Empty;
+
         [StringLength(30)]
         public string? CandidatePhone { get; set; }
 

@@ -7,6 +7,10 @@ namespace HRMS.API.Models
         [Key]
         public int Id { get; set; }
 
+    [Required]
+    [StringLength(36)]
+    public string JobPostingId { get; set; } = Guid.NewGuid().ToString();
+
         [Required]
         [StringLength(200)]
         public string Title { get; set; } = string.Empty;

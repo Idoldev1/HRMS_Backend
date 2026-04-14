@@ -8,5 +8,6 @@ namespace HRMS.API.Repositories
         Task<IEnumerable<Leave>> GetByStatusAsync(string status);
         Task<IEnumerable<Leave>> GetPendingLeavesAsync();
         Task<IEnumerable<Leave>> GetLeavesWithIncludesAsync(int? employeeId, string? status);
+        Task<bool> HasActiveLeaveAsync(int employeeId, DateTime startDate, DateTime endDate);
     }
 }

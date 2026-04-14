@@ -9,7 +9,7 @@ namespace HRMS.API.Services
     public interface ILeaveService
     {
         Task<IEnumerable<LeaveDto>> GetLeavesAsync(int? employeeId, string? status);
-        Task<LeaveDto> CreateLeaveAsync(CreateLeaveRequest request);
+        Task<(bool Success, LeaveDto? Leave, string? ErrorMessage)> CreateLeaveAsync(CreateLeaveRequest request);
         Task ApproveLeaveAsync(int id, int approvedById);
         Task RejectLeaveAsync(int id, string reason);
     }
@@ -37,9 +37,14 @@ namespace HRMS.API.Services
             return leaves.Select(l => l.ToDto());
         }
 
-        public async Task<LeaveDto> CreateLeaveAsync(CreateLeaveRequest request)
+        public async Task<(bool Success, LeaveDto? Leave, string? ErrorMessage)> CreateLeaveAsync(CreateLeaveRequest request)
         {
             _logger.LogInformation("Creating leave request for employee {EmployeeId}.", request.EmployeeId);
+
+            if (await _leaveRepository.HasActiveLeaveAsync(request.EmployeeId, request.StartDate, request.EndDate))
+            {
+                return (false, null, "You currently have an active leave and cannot apply for another leave.");
+            }
 
             var leave = new Leave
             {
@@ -59,7 +64,7 @@ namespace HRMS.API.Services
             var created = await _leaveRepository.AddAsync(leave);
 
             _logger.LogInformation("Leave request created with id {LeaveId}.", created.Id);
-            return created.ToDto();
+            return (true, created.ToDto(), null);
         }
 
         public async Task ApproveLeaveAsync(int id, int approvedById)

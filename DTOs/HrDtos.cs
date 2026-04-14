@@ -92,6 +92,7 @@ namespace HRMS.API.DTOs
     public class JobPostingDto
     {
         public int Id { get; set; }
+        public string JobPostingId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string? Location { get; set; }
@@ -119,6 +120,7 @@ namespace HRMS.API.DTOs
     {
         public int Id { get; set; }
         public int JobPostingId { get; set; }
+        public string JobPostingPublicId { get; set; } = string.Empty;
         public string CandidateName { get; set; } = string.Empty;
         public string CandidateEmail { get; set; } = string.Empty;
         public string? CandidatePhone { get; set; }

@@ -23,6 +23,19 @@ namespace HRMS.API.Repositories
                 .FirstOrDefaultAsync(j => j.Id == id);
         }
 
+        public async Task<JobPosting?> GetByPublicIdWithApplicationsAsync(string jobPostingId)
+        {
+            return await _context.JobPostings
+                .Include(j => j.Applications)
+                .FirstOrDefaultAsync(j => j.JobPostingId == jobPostingId);
+        }
+
+        public async Task<JobPosting?> GetByPublicIdAsync(string jobPostingId)
+        {
+            return await _context.JobPostings
+                .FirstOrDefaultAsync(j => j.JobPostingId == jobPostingId);
+        }
+
         public async Task<IEnumerable<JobPosting>> GetByStatusAsync(string status)
         {
             return await _context.JobPostings

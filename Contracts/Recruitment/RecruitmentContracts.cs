@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace HRMS.API.Contracts.Recruitment
 {
     public class CreateJobPostingRequest
@@ -41,5 +43,14 @@ namespace HRMS.API.Contracts.Recruitment
     {
         public string Status { get; set; } = string.Empty;
         public string? Notes { get; set; }
+    }
+
+    public class ApplyForJobRequest
+    {
+        public string CandidateName { get; set; } = string.Empty;
+        public string CandidateEmail { get; set; } = string.Empty;
+        public string? CandidatePhone { get; set; }
+        public string? CoverLetter { get; set; }
+        public IFormFile? Cv { get; set; }
     }
 }

@@ -30,8 +30,13 @@ namespace HRMS.API.Controllers
         [HttpPost]
         public async Task<ActionResult<LeaveDto>> CreateLeave([FromBody] CreateLeaveRequest request)
         {
-            var created = await _leaveService.CreateLeaveAsync(request);
-            return CreatedAtAction(nameof(GetLeaves), new { id = created.Id }, created);
+            var result = await _leaveService.CreateLeaveAsync(request);
+            if (!result.Success)
+            {
+                return BadRequest((result.ErrorMessage ?? "Unable to create leave request.").ToMessageDto());
+            }
+
+            return CreatedAtAction(nameof(GetLeaves), new { id = result.Leave!.Id }, result.Leave);
         }
 
         [HttpPut("{id}/approve")]

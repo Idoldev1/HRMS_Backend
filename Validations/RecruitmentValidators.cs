@@ -98,4 +98,28 @@ namespace HRMS.API.Validations
                 .WithMessage($"Status must be one of: {string.Join(", ", AllowedStatuses)}.");
         }
     }
+
+    public class ApplyForJobRequestValidator : AbstractValidator<ApplyForJobRequest>
+    {
+        public ApplyForJobRequestValidator()
+        {
+            RuleFor(x => x.CandidateName)
+                .Must(name => !string.IsNullOrWhiteSpace(name))
+                .WithMessage("Candidate name is required.")
+                .Must(name => name == null || name.Trim().Length <= 100)
+                .WithMessage("The length of 'Candidate Name' must be 100 characters or fewer.");
+
+            RuleFor(x => x.CandidateEmail)
+                .Must(email => !string.IsNullOrWhiteSpace(email))
+                .WithMessage("Candidate email is required.")
+                .Must(email => email == null || email.Trim().Length <= 200)
+                .WithMessage("The length of 'Candidate Email' must be 200 characters or fewer.")
+                .Must(email => string.IsNullOrWhiteSpace(email) || new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email.Trim()))
+                .WithMessage("Candidate email is not valid.");
+
+            RuleFor(x => x.CandidatePhone)
+                .MaximumLength(30)
+                .When(x => !string.IsNullOrWhiteSpace(x.CandidatePhone));
+        }
+    }
 }
