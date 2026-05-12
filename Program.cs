@@ -132,8 +132,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// AutoMapper (commented out - not currently used)
-// builder.Services.AddAutoMapper(typeof(Program));
 
 // HttpClient for external services
 builder.Services.AddHttpClient<IEmailService, EmailService>();
