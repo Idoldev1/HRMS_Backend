@@ -43,7 +43,11 @@ namespace HRMS.API.Services
         public async Task<OnboardingProfileDto?> GetProfileAsync(string token)
         {
             var employee = await _repository.GetByTokenAsync(token);
-            if (employee == null) return null;
+            if (employee == null)
+            {
+                _logger.LogWarning("GetProfile: no employee found for onboarding token");
+                return null;
+            }
 
             return MapToDto(employee);
         }
@@ -52,7 +56,10 @@ namespace HRMS.API.Services
         {
             var employee = await _repository.GetByTokenAsync(token);
             if (employee == null)
+            {
+                _logger.LogWarning("UpdateProfile: invalid or expired onboarding token");
                 throw new UnauthorizedAccessException("Invalid or expired onboarding link.");
+            }
 
             // Apply only editable fields
             employee.FirstName = request.FirstName.Trim();
@@ -71,7 +78,7 @@ namespace HRMS.API.Services
 
             await _repository.UpdateEmployeeDetailsAsync(employee);
 
-            _logger.LogInformation($"Employee {employee.EmployeeId} updated personal details via onboarding.");
+            _logger.LogInformation("Employee {EmployeeId} updated personal details via onboarding", employee.EmployeeId);
             return MapToDto(employee);
         }
 
@@ -79,16 +86,23 @@ namespace HRMS.API.Services
         {
             var employee = await _repository.GetByTokenAsync(token);
             if (employee == null)
+            {
+                _logger.LogWarning("CompleteOnboarding: invalid or expired onboarding token");
                 throw new UnauthorizedAccessException("Invalid or expired onboarding link.");
+            }
 
             await _repository.CompleteOnboardingAsync(employee.Id);
+            _logger.LogInformation("Onboarding completed for EmployeeId={EmployeeId}", employee.EmployeeId);
         }
 
         public async Task<OnboardingDocumentDto> UploadDocumentAsync(string token, string documentType, IFormFile file)
         {
             var employee = await _repository.GetByTokenAsync(token);
             if (employee == null)
+            {
+                _logger.LogWarning("UploadDocument: invalid or expired onboarding token");
                 throw new UnauthorizedAccessException("Invalid or expired onboarding link.");
+            }
 
             ValidateFile(file);
 
@@ -118,7 +132,7 @@ namespace HRMS.API.Services
 
             await _repository.AddDocumentAsync(doc);
 
-            _logger.LogInformation($"Employee {employee.Id} uploaded document {doc.DocumentType} ({doc.FileName}).");
+            _logger.LogInformation("Employee {EmployeeId} uploaded document {DocumentType} ({FileName})", employee.Id, doc.DocumentType, doc.FileName);
 
             return MapDocumentToDto(doc);
         }
@@ -127,7 +141,10 @@ namespace HRMS.API.Services
         {
             var employee = await _repository.GetByTokenAsync(token);
             if (employee == null)
+            {
+                _logger.LogWarning("GetDocuments: invalid or expired onboarding token");
                 throw new UnauthorizedAccessException("Invalid or expired onboarding link.");
+            }
 
             var docs = await _repository.GetDocumentsByEmployeeIdAsync(employee.Id);
             return docs.Select(MapDocumentToDto);
@@ -137,11 +154,17 @@ namespace HRMS.API.Services
         {
             var employee = await _repository.GetByTokenAsync(token);
             if (employee == null)
+            {
+                _logger.LogWarning("DeleteDocument: invalid or expired onboarding token");
                 throw new UnauthorizedAccessException("Invalid or expired onboarding link.");
+            }
 
             var doc = await _repository.GetDocumentByIdAsync(docId, employee.Id);
             if (doc == null)
+            {
+                _logger.LogWarning("DeleteDocument: document {DocId} not found for EmployeeId={EmployeeId}", docId, employee.Id);
                 throw new KeyNotFoundException("Document not found.");
+            }
 
             // Delete physical file
             var filePath = Path.Combine(
@@ -153,23 +176,32 @@ namespace HRMS.API.Services
 
             await _repository.DeleteDocumentAsync(doc);
 
-            _logger.LogInformation($"Employee {employee.Id} deleted document {docId}.");
+            _logger.LogInformation("Employee {EmployeeId} deleted document {DocId}", employee.Id, docId);
         }
 
         public async Task CreateUserProfileAsync(string token, CreateOnboardingUserProfileRequest request)
         {
             var employee = await _repository.GetByTokenAsync(token);
             if (employee == null)
+            {
+                _logger.LogWarning("CreateUserProfile: invalid or expired onboarding token");
                 throw new UnauthorizedAccessException("Invalid or expired onboarding link.");
+            }
 
             var existingByEmail = await _userManager.FindByEmailAsync(employee.Email);
             if (existingByEmail != null)
+            {
+                _logger.LogWarning("CreateUserProfile: user account already exists for {Email}", employee.Email);
                 throw new InvalidOperationException("A user account already exists for this email.");
+            }
 
             var existingByEmployeeId = await _userManager.Users
                 .FirstOrDefaultAsync(u => u.EmployeeId == employee.EmployeeId);
             if (existingByEmployeeId != null)
+            {
+                _logger.LogWarning("CreateUserProfile: user account already exists for EmployeeId={EmployeeId}", employee.EmployeeId);
                 throw new InvalidOperationException("A user account already exists for this employee.");
+            }
 
             var user = new ApplicationUser
             {
@@ -187,6 +219,7 @@ namespace HRMS.API.Services
             if (!createResult.Succeeded)
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                _logger.LogWarning("CreateUserProfile: user creation failed for EmployeeId={EmployeeId}: {Errors}", employee.EmployeeId, errors);
                 throw new ArgumentException(errors);
             }
 
@@ -196,7 +229,7 @@ namespace HRMS.API.Services
             }
 
             await _repository.CompleteOnboardingAsync(employee.Id);
-            _logger.LogInformation($"Created user profile for employee {employee.EmployeeId} and completed onboarding.");
+            _logger.LogInformation("User profile created and onboarding completed for EmployeeId={EmployeeId}", employee.EmployeeId);
         }
 
         // ── Private Helpers ──────────────────────────────────────────

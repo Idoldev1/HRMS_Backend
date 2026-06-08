@@ -1,5 +1,6 @@
 using HRMS.API.Models;
 using HRMS.API.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace HRMS.API.Services
@@ -15,11 +16,17 @@ namespace HRMS.API.Services
     {
         private readonly IAttendanceRepository _attendanceRepository;
         private readonly ILogger<AttendanceService> _logger;
+        private readonly AttendanceSettings _attendanceSettings;
 
-        public AttendanceService(IAttendanceRepository attendanceRepository, ILogger<AttendanceService> logger)
+        public AttendanceService(
+            IAttendanceRepository attendanceRepository,
+            ILogger<AttendanceService> logger,
+            IConfiguration configuration)
         {
             _attendanceRepository = attendanceRepository;
             _logger = logger;
+            _attendanceSettings = configuration.GetSection("AttendanceSettings").Get<AttendanceSettings>()
+                ?? new AttendanceSettings();
         }
 
         public async Task<IEnumerable<Attendance>> GetAttendancesAsync(int? employeeId, DateTime? startDate, DateTime? endDate)
@@ -56,6 +63,7 @@ namespace HRMS.API.Services
 
             attendance.Date = DateTime.Today;
             attendance.CheckIn = DateTime.UtcNow;
+            attendance.Status = IsLateArrival(DateTime.Now.TimeOfDay) ? "Late" : "Present";
             attendance.CreatedAt = DateTime.UtcNow;
             attendance.UpdatedAt = DateTime.UtcNow;
 
@@ -98,7 +106,7 @@ namespace HRMS.API.Services
                 var duration = existingAttendance.CheckOut.Value - existingAttendance.CheckIn;
                 var workedHours = (decimal)duration.TotalHours - (existingAttendance.BreakDuration / 60m);
                 existingAttendance.TotalHours = workedHours < 0 ? 0 : workedHours;
-                existingAttendance.Status = "Signed Out";
+                existingAttendance.Status = existingAttendance.Status;
                 _logger.LogInformation($"Calculated total hours {existingAttendance.TotalHours} for attendance id {id}.");
             }
             else
@@ -114,32 +122,49 @@ namespace HRMS.API.Services
             _logger.LogInformation($"Attendance record with id {id} updated successfully.");
         }
 
+        private bool IsLateArrival(TimeSpan checkInTime)
+        {
+            if (!TimeSpan.TryParse(_attendanceSettings.WorkDayStartTime, out var workStart))
+                workStart = TimeSpan.FromHours(8);
+            return checkInTime > workStart;
+        }
+
         private async Task AutoCloseStaleAttendancesAsync(int? employeeId = null)
         {
+            if (!TimeSpan.TryParse(_attendanceSettings.WorkDayEndTime, out var workEnd))
+                workEnd = TimeSpan.FromHours(17);
+
             var today = DateTime.Today;
             var staleAttendances = await _attendanceRepository.GetOpenAttendancesBeforeDateAsync(today, employeeId);
 
             foreach (var staleAttendance in staleAttendances)
             {
-                var dayEnd = staleAttendance.Date.Date.AddDays(1).AddSeconds(-1);
-                staleAttendance.CheckOut = dayEnd;
+                var autoCheckOut = staleAttendance.Date.Date.Add(workEnd);
+                staleAttendance.CheckOut = autoCheckOut;
+                staleAttendance.Status = staleAttendance.Status;
 
                 if (staleAttendance.CheckIn != default)
                 {
-                    var duration = dayEnd - staleAttendance.CheckIn;
+                    var duration = autoCheckOut - staleAttendance.CheckIn;
                     var workedHours = (decimal)duration.TotalHours - (staleAttendance.BreakDuration / 60m);
                     staleAttendance.TotalHours = workedHours < 0 ? 0 : workedHours;
                 }
 
-                staleAttendance.Status = "Signed Out";
                 staleAttendance.UpdatedAt = DateTime.Now;
 
                 await _attendanceRepository.UpdateAsync(staleAttendance);
 
                 _logger.LogInformation(
-                    $"Auto-closed stale attendance id {staleAttendance.Id} for employee {staleAttendance.EmployeeId}.");
+                    "Auto-closed stale attendance {AttendanceId} for EmployeeId={EmployeeId} with checkout at {CheckOut}",
+                    staleAttendance.Id, staleAttendance.EmployeeId, autoCheckOut);
             }
         }
+    }
+
+    public class AttendanceSettings
+    {
+        public string WorkDayStartTime { get; set; } = "08:00";
+        public string WorkDayEndTime { get; set; } = "17:00";
     }
 }
 

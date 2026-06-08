@@ -62,6 +62,8 @@ namespace HRMS.API.Models
         [DataType(DataType.Date)]
         public DateTime? NextReviewDate { get; set; }
 
+        public string? ApprovalComment { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
     }

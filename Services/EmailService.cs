@@ -38,7 +38,7 @@ namespace HRMS.API.Services
             {
                 if (string.IsNullOrWhiteSpace(_brevo.ApiKey))
                 {
-                  _logger.LogInformation($"Brevo API key is not configured. Skipping onboarding email to {toEmail}.");
+                    _logger.LogInformation("Brevo API key is not configured. Skipping onboarding email to {ToEmail}", toEmail);
                     return;
                 }
 
@@ -71,17 +71,17 @@ namespace HRMS.API.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation($"Onboarding invitation sent to {toEmail} via Brevo.");
+                    _logger.LogInformation("Onboarding invitation sent to {ToEmail} via Brevo", toEmail);
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                  _logger.LogInformation($"Brevo API error ({response.StatusCode}): {errorContent}");
+                    _logger.LogWarning("Brevo API error sending onboarding email to {ToEmail}: {StatusCode} - {ErrorContent}", toEmail, response.StatusCode, errorContent);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to send onboarding email to {toEmail}.");
+                _logger.LogError(ex, "Failed to send onboarding email to {ToEmail}", toEmail);
                 // Do not rethrow – email failure should not block employee creation
             }
         }
@@ -126,17 +126,17 @@ namespace HRMS.API.Services
                 var response = await _httpClient.PostAsync(_brevo.ApiUrl, content);
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation($"Password reset OTP sent to {toEmail} via Brevo.");
+                    _logger.LogInformation("Password reset OTP sent to {ToEmail} via Brevo", toEmail);
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogInformation($"Brevo API error while sending OTP ({response.StatusCode}): {errorContent}");
+                    _logger.LogWarning("Brevo API error sending OTP to {ToEmail}: {StatusCode} - {ErrorContent}", toEmail, response.StatusCode, errorContent);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to send password reset OTP email to {toEmail}.");
+                _logger.LogError(ex, "Failed to send password reset OTP email to {ToEmail}", toEmail);
             }
         }
 

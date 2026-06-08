@@ -13,7 +13,7 @@ namespace HRMS.API.Repositories
         public async Task<IEnumerable<PerformanceReview>> GetByEmployeeIdAsync(int employeeId)
         {
             return await _context.PerformanceReviews
-                .Include(p => p.Employee)
+                .Include(p => p.Employee).ThenInclude(e => e!.Department)
                 .Where(p => p.EmployeeId == employeeId)
                 .ToListAsync();
         }
@@ -21,7 +21,7 @@ namespace HRMS.API.Repositories
         public async Task<IEnumerable<PerformanceReview>> GetByPeriodAsync(DateTime startDate, DateTime endDate)
         {
             return await _context.PerformanceReviews
-                .Include(p => p.Employee)
+                .Include(p => p.Employee).ThenInclude(e => e!.Department)
                 .Where(p => p.CreatedAt >= startDate && p.CreatedAt <= endDate)
                 .ToListAsync();
         }
@@ -29,8 +29,8 @@ namespace HRMS.API.Repositories
         public async Task<IEnumerable<PerformanceReview>> GetReviewsWithIncludesAsync(int? employeeId)
         {
             var query = _context.PerformanceReviews
-                .Include(p => p.Employee)
-                .Include(p => p.ReviewedBy)
+                .Include(p => p.Employee).ThenInclude(e => e!.Department)
+                .Include(p => p.ReviewedBy).ThenInclude(e => e!.Department)
                 .AsQueryable();
 
             if (employeeId.HasValue)

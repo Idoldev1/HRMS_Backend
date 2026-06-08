@@ -50,9 +50,12 @@ namespace HRMS.API.Services
 
         public async Task<(bool Success, string Token, string? ErrorMessage)> RegisterAsync(RegisterModel model)
         {
+            _logger.LogInformation("Registration attempt for {Email} with role {Role}", model.Email, model.Role);
+
             var normalizedRole = Roles.Normalize(model.Role);
             if (normalizedRole is null)
             {
+                _logger.LogWarning("Registration rejected for {Email}: invalid role {Role}", model.Email, model.Role);
                 return (false, string.Empty, $"Invalid role. Allowed roles: {string.Join(", ", Roles.All)}.");
             }
 
@@ -63,6 +66,7 @@ namespace HRMS.API.Services
 
             if (!await _departmentRepository.ExistsAsync(model.DepartmentId))
             {
+                _logger.LogWarning("Registration rejected for {Email}: department {DepartmentId} not found", model.Email, model.DepartmentId);
                 return (false, string.Empty, "Selected department does not exist.");
             }
 
@@ -83,11 +87,14 @@ namespace HRMS.API.Services
             var result = await _userManager.CreateAsync(user, model.Password);
             if (!result.Succeeded)
             {
-                return (false, string.Empty, string.Join(", ", result.Errors.Select(e => e.Description)));
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning("User creation failed for {Email}: {Errors}", model.Email, errors);
+                return (false, string.Empty, errors);
             }
 
             if (!await _roleManager.RoleExistsAsync(normalizedRole))
             {
+                _logger.LogInformation("Creating missing role {Role}", normalizedRole);
                 await _roleManager.CreateAsync(new IdentityRole(normalizedRole));
             }
 
@@ -116,11 +123,13 @@ namespace HRMS.API.Services
                 };
 
                 var createdEmployee = await _employeeRepository.AddAsync(employee);
+                _logger.LogInformation("User registered successfully: {Email}, EmployeeId={EmployeeId}, Role={Role}", model.Email, employeeId, normalizedRole);
                 var token = GenerateJwtToken(user, createdEmployee.Id);
                 return (true, token, null);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Employee profile creation failed for {Email} (EmployeeId={EmployeeId}); rolling back user", model.Email, employeeId);
                 await _userManager.DeleteAsync(user);
                 return (false, string.Empty, "Unable to create employee profile for this account.");
             }
@@ -147,15 +156,19 @@ namespace HRMS.API.Services
 
         public async Task<(bool Success, string Token, ApplicationUser? User, Employee? Employee, string? ErrorMessage)> LoginAsync(LoginModel model)
         {
+            _logger.LogInformation("Login attempt for {Email}", model.Email);
+
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null || !user.IsActive)
             {
+                _logger.LogWarning("Login failed for {Email}: account not found or inactive", model.Email);
                 return (false, string.Empty, null, null, "Invalid credentials");
             }
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
             if (!result.Succeeded)
             {
+                _logger.LogWarning("Login failed for {Email}: invalid password", model.Email);
                 return (false, string.Empty, null, null, "Invalid credentials");
             }
 
@@ -165,6 +178,7 @@ namespace HRMS.API.Services
                 employee = await _employeeRepository.GetByEmployeeIdAsync(user.EmployeeId);
             }
 
+            _logger.LogInformation("Login successful for {Email}", model.Email);
             var token = GenerateJwtToken(user, employee?.Id);
             return (true, token, user, employee, null);
         }
@@ -174,6 +188,7 @@ namespace HRMS.API.Services
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                _logger.LogWarning("GetCurrentUser: no user found for UserId={UserId}", userId);
                 return (null, null);
             }
 
@@ -188,9 +203,12 @@ namespace HRMS.API.Services
 
         public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string userId, ChangePasswordModel model)
         {
+            _logger.LogInformation("Password change requested for UserId={UserId}", userId);
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                _logger.LogWarning("Password change failed: no user found for UserId={UserId}", userId);
                 return (false, "User account not found.");
             }
 
@@ -201,19 +219,25 @@ namespace HRMS.API.Services
 
             if (!result.Succeeded)
             {
-                return (false, string.Join(", ", result.Errors.Select(e => e.Description)));
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Password change failed for UserId={UserId}: {Errors}", userId, errors);
+                return (false, errors);
             }
 
+            _logger.LogInformation("Password changed successfully for UserId={UserId}", userId);
             return (true, null);
         }
 
         public async Task RequestPasswordResetOtpAsync(RequestPasswordResetOtpModel model)
         {
             var normalizedEmail = model.Email.Trim().ToLowerInvariant();
+            _logger.LogInformation("Password reset OTP requested for {Email}", normalizedEmail);
+
             var user = await _userManager.FindByEmailAsync(normalizedEmail);
 
             if (user == null || !user.IsActive || string.IsNullOrWhiteSpace(user.Email))
             {
+                _logger.LogDebug("Password reset OTP request silently ignored for {Email}: user not found or inactive", normalizedEmail);
                 return;
             }
 
@@ -234,21 +258,26 @@ namespace HRMS.API.Services
                 recipientName = user.Email;
             }
 
+            _logger.LogInformation("Password reset OTP issued for {Email}, expires in {ExpiryMinutes} minutes", normalizedEmail, expiryMinutes);
             await _emailService.SendPasswordResetOtpAsync(user.Email, recipientName, otpCode, expiryMinutes);
         }
 
         public async Task<(bool Success, string? ErrorMessage)> ResetPasswordWithOtpAsync(ResetPasswordWithOtpModel model)
         {
+            var normalizedEmail = model.Email.Trim().ToLowerInvariant();
+            _logger.LogInformation("Password reset via OTP attempted for {Email}", normalizedEmail);
+
             if (!string.Equals(model.NewPassword, model.ConfirmNewPassword, StringComparison.Ordinal))
             {
+                _logger.LogWarning("Password reset rejected for {Email}: new password and confirm do not match", normalizedEmail);
                 return (false, "Confirm new password must match new password.");
             }
 
-            var normalizedEmail = model.Email.Trim().ToLowerInvariant();
             var user = await _userManager.FindByEmailAsync(normalizedEmail);
 
             if (user == null || !user.IsActive)
             {
+                _logger.LogWarning("Password reset rejected for {Email}: user not found or inactive", normalizedEmail);
                 return (false, "OTP is invalid or expired.");
             }
 
@@ -256,11 +285,13 @@ namespace HRMS.API.Services
                 || otpEntry == null
                 || otpEntry.ExpiresAtUtc < DateTime.UtcNow)
             {
+                _logger.LogWarning("Password reset rejected for {Email}: OTP missing or expired", normalizedEmail);
                 return (false, "OTP is invalid or expired.");
             }
 
             if (!string.Equals(otpEntry.Code, model.Otp.Trim(), StringComparison.Ordinal))
             {
+                _logger.LogWarning("Password reset rejected for {Email}: OTP code mismatch", normalizedEmail);
                 return (false, "OTP is invalid or expired.");
             }
 
@@ -269,11 +300,13 @@ namespace HRMS.API.Services
 
             if (!resetResult.Succeeded)
             {
-                return (false, string.Join(", ", resetResult.Errors.Select(e => e.Description)));
+                var errors = string.Join(", ", resetResult.Errors.Select(e => e.Description));
+                _logger.LogWarning("Password reset failed for {Email}: {Errors}", normalizedEmail, errors);
+                return (false, errors);
             }
 
             _memoryCache.Remove(GetPasswordResetOtpCacheKey(normalizedEmail));
-            _logger.LogInformation($"Password reset completed via OTP for {normalizedEmail}");
+            _logger.LogInformation("Password reset completed via OTP for {Email}", normalizedEmail);
 
             return (true, null);
         }
@@ -314,46 +347,6 @@ namespace HRMS.API.Services
         }
     }
 
-    public class RegisterModel
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string? Role { get; set; }
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public string? Phone { get; set; }
-        public DateTime DateOfBirth { get; set; }
-        public int DepartmentId { get; set; }
-        public string? Position { get; set; }
-        public decimal Salary { get; set; }
-        public string? EmploymentType { get; set; }
-    }
-
-    public class LoginModel
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
-
-    public class ChangePasswordModel
-    {
-        public string CurrentPassword { get; set; } = string.Empty;
-        public string NewPassword { get; set; } = string.Empty;
-        public string ConfirmNewPassword { get; set; } = string.Empty;
-    }
-
-    public class RequestPasswordResetOtpModel
-    {
-        public string Email { get; set; } = string.Empty;
-    }
-
-    public class ResetPasswordWithOtpModel
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Otp { get; set; } = string.Empty;
-        public string NewPassword { get; set; } = string.Empty;
-        public string ConfirmNewPassword { get; set; } = string.Empty;
-    }
 
     public record PasswordResetOtpCacheEntry(string Code, DateTime ExpiresAtUtc);
 }

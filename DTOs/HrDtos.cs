@@ -83,6 +83,7 @@ namespace HRMS.API.DTOs
         public string? ReviewerComments { get; set; }
         public string? EmployeeComments { get; set; }
         public string Status { get; set; } = string.Empty;
+        public string? ApprovalComment { get; set; }
         public DateTime? NextReviewDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
@@ -131,5 +132,61 @@ namespace HRMS.API.DTOs
         public DateTime AppliedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string? JobTitle { get; set; }
+    }
+
+    public class TimesheetEntryDto
+    {
+        public int Id { get; set; }
+        public int TimesheetId { get; set; }
+        public DateTime Date { get; set; }
+        public string? AttendanceStatus { get; set; }
+        public decimal HoursWorked { get; set; }
+        public string? TasksCompleted { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class TimesheetAuditLogDto
+    {
+        public int Id { get; set; }
+        public string Action { get; set; } = string.Empty;
+        public string PerformedById { get; set; } = string.Empty;
+        public string PerformedByName { get; set; } = string.Empty;
+        public string? Comment { get; set; }
+        public string? PreviousStatus { get; set; }
+        public string? NewStatus { get; set; }
+        public DateTime PerformedAt { get; set; }
+    }
+
+    public class TimesheetSummaryDto
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public string MonthName { get; set; } = string.Empty;
+        public int TotalWorkingDays { get; set; }
+        public int PresentDays { get; set; }
+        public int LateDays { get; set; }
+        public int OnLeaveDays { get; set; }
+        public int AbsentDays { get; set; }
+        public decimal TotalHours { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public bool IsLocked { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public EmployeeSummaryDto? Employee { get; set; }
+    }
+
+    public class TimesheetDto : TimesheetSummaryDto
+    {
+        public int? ApprovedById { get; set; }
+        public string? ApprovalComment { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public DateTime? LockedAt { get; set; }
+        public string? LockedBy { get; set; }
+        public EmployeeSummaryDto? ApprovedBy { get; set; }
+        public List<TimesheetEntryDto> Entries { get; set; } = new();
+        public List<TimesheetAuditLogDto> AuditLogs { get; set; } = new();
     }
 }
