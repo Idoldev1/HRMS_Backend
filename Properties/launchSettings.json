@@ -13,7 +13,7 @@
         "JwtSettings__SecretKey": "YourSuperSecretKeyForJWTTokenGeneration12345",
         "JwtSettings__Issuer": "HRMS",
         "JwtSettings__Audience": "HRMSUsers",
-        "BrevoSettings__ApiKey": "YourBrevoApiKeyHere",
+        "BrevoSettings__ApiKey": "",
         "BrevoSettings__FromEmail": "idoldev01@gmail.com",
         "BrevoSettings__FromName": "HRMS System",
         "ClientSettings__BaseUrl": "http://localhost:3000",

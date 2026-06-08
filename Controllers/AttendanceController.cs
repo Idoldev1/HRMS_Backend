@@ -1,9 +1,11 @@
+using HRMS.API.Constants;
 using HRMS.API.Contracts.Attendance;
 using HRMS.API.DTOs;
 using HRMS.API.Models;
 using HRMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace HRMS.API.Controllers
 {
@@ -22,11 +24,19 @@ namespace HRMS.API.Controllers
         [HttpPost("search")]
         public async Task<ActionResult<IEnumerable<AttendanceDto>>> GetAttendances([FromBody] GetAttendancesRequest request)
         {
-            var attendances = await _attendanceService.GetAttendancesAsync(
-                request.EmployeeId,
-                request.StartDate,
-                request.EndDate);
-            return Ok(attendances.Select(attendance => attendance.ToDto()));
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var isAdminOrHr = role == Roles.Admin || role == Roles.HR;
+
+            int? employeeId = request.EmployeeId;
+            if (!isAdminOrHr)
+            {
+                if (!int.TryParse(User.FindFirstValue("EmployeeId"), out var currentEmployeeId))
+                    return Forbid();
+                employeeId = currentEmployeeId;
+            }
+
+            var attendances = await _attendanceService.GetAttendancesAsync(employeeId, request.StartDate, request.EndDate);
+            return Ok(attendances.Select(a => a.ToDto()));
         }
 
         [HttpPost]

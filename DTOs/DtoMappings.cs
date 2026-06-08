@@ -192,6 +192,7 @@ namespace HRMS.API.DTOs
             ReviewerComments = review.ReviewerComments,
             EmployeeComments = review.EmployeeComments,
             Status = review.Status,
+            ApprovalComment = review.ApprovalComment,
             NextReviewDate = review.NextReviewDate,
             CreatedAt = review.CreatedAt,
             UpdatedAt = review.UpdatedAt,
@@ -298,6 +299,78 @@ namespace HRMS.API.DTOs
             AppliedAt = app.AppliedAt,
             UpdatedAt = app.UpdatedAt,
             JobTitle = app.JobPosting?.Title,
+        };
+
+        public static TimesheetEntryDto ToDto(this TimesheetEntry entry) => new()
+        {
+            Id = entry.Id,
+            TimesheetId = entry.TimesheetId,
+            Date = entry.Date,
+            AttendanceStatus = entry.AttendanceStatus,
+            HoursWorked = entry.HoursWorked,
+            TasksCompleted = entry.TasksCompleted,
+            Notes = entry.Notes,
+        };
+
+        public static TimesheetAuditLogDto ToDto(this TimesheetAuditLog log) => new()
+        {
+            Id = log.Id,
+            Action = log.Action,
+            PerformedById = log.PerformedById,
+            PerformedByName = log.PerformedByName,
+            Comment = log.Comment,
+            PreviousStatus = log.PreviousStatus,
+            NewStatus = log.NewStatus,
+            PerformedAt = log.PerformedAt,
+        };
+
+        public static TimesheetSummaryDto ToSummaryDto(this Timesheet t) => new()
+        {
+            Id = t.Id,
+            EmployeeId = t.EmployeeId,
+            Month = t.Month,
+            Year = t.Year,
+            MonthName = new DateTime(t.Year, t.Month, 1).ToString("MMMM yyyy"),
+            TotalWorkingDays = t.TotalWorkingDays,
+            PresentDays = t.PresentDays,
+            LateDays = t.LateDays,
+            OnLeaveDays = t.OnLeaveDays,
+            AbsentDays = t.AbsentDays,
+            TotalHours = t.TotalHours,
+            Status = t.Status,
+            IsLocked = t.IsLocked,
+            CreatedAt = t.CreatedAt,
+            UpdatedAt = t.UpdatedAt,
+            Employee = t.Employee.ToEmployeeSummaryDto(),
+        };
+
+        public static TimesheetDto ToDto(this Timesheet t) => new()
+        {
+            Id = t.Id,
+            EmployeeId = t.EmployeeId,
+            Month = t.Month,
+            Year = t.Year,
+            MonthName = new DateTime(t.Year, t.Month, 1).ToString("MMMM yyyy"),
+            TotalWorkingDays = t.TotalWorkingDays,
+            PresentDays = t.PresentDays,
+            LateDays = t.LateDays,
+            OnLeaveDays = t.OnLeaveDays,
+            AbsentDays = t.AbsentDays,
+            TotalHours = t.TotalHours,
+            Status = t.Status,
+            IsLocked = t.IsLocked,
+            CreatedAt = t.CreatedAt,
+            UpdatedAt = t.UpdatedAt,
+            ApprovedById = t.ApprovedById,
+            ApprovalComment = t.ApprovalComment,
+            RejectionReason = t.RejectionReason,
+            ApprovedAt = t.ApprovedAt,
+            LockedAt = t.LockedAt,
+            LockedBy = t.LockedBy,
+            Employee = t.Employee.ToEmployeeSummaryDto(),
+            ApprovedBy = t.ApprovedBy.ToEmployeeSummaryDto(),
+            Entries = (t.Entries ?? []).Select(e => e.ToDto()).ToList(),
+            AuditLogs = (t.AuditLogs ?? []).Select(a => a.ToDto()).ToList(),
         };
     }
 }

@@ -22,6 +22,9 @@ namespace HRMS.API.Data
         public DbSet<EmployeeDocument> EmployeeDocuments { get; set; }
         public DbSet<JobPosting> JobPostings { get; set; }
         public DbSet<JobApplication> JobApplications { get; set; }
+        public DbSet<Timesheet> Timesheets { get; set; }
+        public DbSet<TimesheetEntry> TimesheetEntries { get; set; }
+        public DbSet<TimesheetAuditLog> TimesheetAuditLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -130,6 +133,38 @@ namespace HRMS.API.Data
                       .HasForeignKey(a => a.JobPostingId)
                       .OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(a => new { a.JobPostingId, a.NormalizedCandidateEmail }).IsUnique();
+            });
+
+            // Timesheet Configuration
+            builder.Entity<Timesheet>(entity =>
+            {
+                entity.HasIndex(t => new { t.EmployeeId, t.Month, t.Year }).IsUnique();
+                entity.HasOne(t => t.Employee)
+                      .WithMany()
+                      .HasForeignKey(t => t.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(t => t.ApprovedBy)
+                      .WithMany()
+                      .HasForeignKey(t => t.ApprovedById)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // TimesheetEntry Configuration
+            builder.Entity<TimesheetEntry>(entity =>
+            {
+                entity.HasOne(e => e.Timesheet)
+                      .WithMany(t => t.Entries)
+                      .HasForeignKey(e => e.TimesheetId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // TimesheetAuditLog Configuration
+            builder.Entity<TimesheetAuditLog>(entity =>
+            {
+                entity.HasOne(a => a.Timesheet)
+                      .WithMany(t => t.AuditLogs)
+                      .HasForeignKey(a => a.TimesheetId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

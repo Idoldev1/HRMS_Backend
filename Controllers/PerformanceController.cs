@@ -41,5 +41,24 @@ namespace HRMS.API.Controllers
             await _performanceService.UpdateReviewAsync(id, review);
             return NoContent();
         }
+
+        [HttpPost("{id}/approve")]
+        [Authorize(Roles = "Admin,HR,Manager")]
+        public async Task<ActionResult<PerformanceReviewDto>> ApprovePerformanceReview(int id, [FromBody] ApprovePerformanceRequest request)
+        {
+            var review = await _performanceService.ApproveReviewAsync(id, request.Comment);
+            return Ok(review.ToDto());
+        }
+
+        [HttpPost("{id}/reject")]
+        [Authorize(Roles = "Admin,HR,Manager")]
+        public async Task<ActionResult<PerformanceReviewDto>> RejectPerformanceReview(int id, [FromBody] RejectPerformanceRequest request)
+        {
+            var review = await _performanceService.RejectReviewAsync(id, request.Reason);
+            return Ok(review.ToDto());
+        }
     }
+
+    public record ApprovePerformanceRequest(string? Comment);
+    public record RejectPerformanceRequest(string Reason);
 }

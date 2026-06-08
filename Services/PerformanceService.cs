@@ -1,6 +1,5 @@
 using HRMS.API.Models;
 using HRMS.API.Repositories;
-using Microsoft.Extensions.Logging;
 
 namespace HRMS.API.Services
 {
@@ -9,6 +8,8 @@ namespace HRMS.API.Services
         Task<IEnumerable<PerformanceReview>> GetReviewsAsync(int? employeeId);
         Task<PerformanceReview> CreateReviewAsync(PerformanceReview review);
         Task UpdateReviewAsync(int id, PerformanceReview review);
+        Task<PerformanceReview> ApproveReviewAsync(int id, string? comment);
+        Task<PerformanceReview> RejectReviewAsync(int id, string reason);
     }
 
     public class PerformanceService : IPerformanceService
@@ -66,6 +67,44 @@ namespace HRMS.API.Services
             await _performanceRepository.UpdateAsync(review);
 
             _logger.LogInformation("Performance review with id {ReviewId} updated successfully.", id);
+        }
+
+        public async Task<PerformanceReview> ApproveReviewAsync(int id, string? comment)
+        {
+            _logger.LogInformation("Approving performance review {ReviewId}.", id);
+
+            var review = await _performanceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Performance review with id {id} not found.");
+
+            if (review.Status != "Submitted")
+                throw new InvalidOperationException($"Only submitted reviews can be approved. Current status: '{review.Status}'.");
+
+            review.Status = "Approved";
+            review.ApprovalComment = comment;
+            review.UpdatedAt = DateTime.Now;
+            await _performanceRepository.UpdateAsync(review);
+
+            _logger.LogInformation("Performance review {ReviewId} approved.", id);
+            return review;
+        }
+
+        public async Task<PerformanceReview> RejectReviewAsync(int id, string reason)
+        {
+            _logger.LogInformation("Rejecting performance review {ReviewId}.", id);
+
+            var review = await _performanceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Performance review with id {id} not found.");
+
+            if (review.Status != "Submitted")
+                throw new InvalidOperationException($"Only submitted reviews can be rejected. Current status: '{review.Status}'.");
+
+            review.Status = "Rejected";
+            review.ApprovalComment = reason;
+            review.UpdatedAt = DateTime.Now;
+            await _performanceRepository.UpdateAsync(review);
+
+            _logger.LogInformation("Performance review {ReviewId} rejected.", id);
+            return review;
         }
     }
 }

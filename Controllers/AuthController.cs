@@ -3,6 +3,7 @@ using HRMS.API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using HRMS.API.Models;
 
 namespace HRMS.API.Controllers
 {
