@@ -53,5 +53,17 @@ namespace HRMS.API.Repositories
 
             return await query.OrderByDescending(l => l.CreatedAt).ToListAsync();
         }
+
+        public async Task<bool> HasActiveLeaveAsync(int employeeId, DateTime startDate, DateTime endDate)
+        {
+            var requestedStart = startDate.Date;
+            var requestedEnd = endDate.Date;
+
+            return await _context.Leaves.AnyAsync(l =>
+                l.EmployeeId == employeeId &&
+                l.Status == "Approved" &&
+                l.StartDate.Date <= requestedEnd &&
+                l.EndDate.Date >= requestedStart);
+        }
     }
 }

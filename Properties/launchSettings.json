@@ -1,16 +1,6 @@
 {
   "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
-    "http": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5000",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
@@ -19,11 +9,11 @@
       "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__DefaultConnection": "Server=PSALMSON\\SQLEXPRESS;Database=HRMSDB;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true",
+        "ConnectionStrings__DefaultConnection": "Server=PSALMSON\\SQLEXPRESS;Database=HRMSDB;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true;",
         "JwtSettings__SecretKey": "YourSuperSecretKeyForJWTTokenGeneration12345",
         "JwtSettings__Issuer": "HRMS",
         "JwtSettings__Audience": "HRMSUsers",
-        "BrevoSettings__ApiKey": "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",
+        "BrevoSettings__ApiKey": "",
         "BrevoSettings__FromEmail": "idoldev01@gmail.com",
         "BrevoSettings__FromName": "HRMS System",
         "ClientSettings__BaseUrl": "http://localhost:3000",

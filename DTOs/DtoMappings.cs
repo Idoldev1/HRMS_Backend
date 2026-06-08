@@ -192,6 +192,7 @@ namespace HRMS.API.DTOs
             ReviewerComments = review.ReviewerComments,
             EmployeeComments = review.EmployeeComments,
             Status = review.Status,
+            ApprovalComment = review.ApprovalComment,
             NextReviewDate = review.NextReviewDate,
             CreatedAt = review.CreatedAt,
             UpdatedAt = review.UpdatedAt,
@@ -221,5 +222,155 @@ namespace HRMS.API.DTOs
                 Position = employee.Position,
             };
         }
+
+        public static CompanyDto ToDto(this Company company) => new()
+        {
+            Id = company.Id,
+            Name = company.Name,
+            RegistrationNumber = company.RegistrationNumber,
+            Industry = company.Industry,
+            Email = company.Email,
+            Phone = company.Phone,
+            Website = company.Website,
+            Street = company.Street,
+            City = company.City,
+            State = company.State,
+            ZipCode = company.ZipCode,
+            Country = company.Country,
+        };
+
+        public static JobPostingDto ToDto(this JobPosting job) => new()
+        {
+            Id = job.Id,
+            JobPostingId = job.JobPostingId,
+            Title = job.Title,
+            Description = job.Description,
+            Location = job.Location,
+            EmploymentType = job.EmploymentType,
+            WorkMode = job.WorkMode,
+            SalaryMin = job.SalaryMin,
+            SalaryMax = job.SalaryMax,
+            Department = job.Department,
+            Requirements = job.Requirements,
+            Responsibilities = job.Responsibilities,
+            Status = job.Status,
+            ClosingDate = job.ClosingDate,
+            PostedById = job.PostedById,
+            CreatedAt = job.CreatedAt,
+            UpdatedAt = job.UpdatedAt,
+            ApplicationCount = job.Applications?.Count ?? 0,
+        };
+
+        public static JobPostingDetailDto ToDetailDto(this JobPosting job) => new()
+        {
+            Id = job.Id,
+            JobPostingId = job.JobPostingId,
+            Title = job.Title,
+            Description = job.Description,
+            Location = job.Location,
+            EmploymentType = job.EmploymentType,
+            WorkMode = job.WorkMode,
+            SalaryMin = job.SalaryMin,
+            SalaryMax = job.SalaryMax,
+            Department = job.Department,
+            Requirements = job.Requirements,
+            Responsibilities = job.Responsibilities,
+            Status = job.Status,
+            ClosingDate = job.ClosingDate,
+            PostedById = job.PostedById,
+            CreatedAt = job.CreatedAt,
+            UpdatedAt = job.UpdatedAt,
+            ApplicationCount = job.Applications?.Count ?? 0,
+            Applications = job.Applications?.Select(a => a.ToDto()).ToList() ?? new(),
+        };
+
+        public static JobApplicationDto ToDto(this JobApplication app) => new()
+        {
+            Id = app.Id,
+            JobPostingId = app.JobPostingId,
+            JobPostingPublicId = app.JobPosting?.JobPostingId ?? string.Empty,
+            CandidateName = app.CandidateName,
+            CandidateEmail = app.CandidateEmail,
+            CandidatePhone = app.CandidatePhone,
+            CvFilePath = app.CvFilePath,
+            CoverLetter = app.CoverLetter,
+            Status = app.Status,
+            Notes = app.Notes,
+            AppliedAt = app.AppliedAt,
+            UpdatedAt = app.UpdatedAt,
+            JobTitle = app.JobPosting?.Title,
+        };
+
+        public static TimesheetEntryDto ToDto(this TimesheetEntry entry) => new()
+        {
+            Id = entry.Id,
+            TimesheetId = entry.TimesheetId,
+            Date = entry.Date,
+            AttendanceStatus = entry.AttendanceStatus,
+            HoursWorked = entry.HoursWorked,
+            TasksCompleted = entry.TasksCompleted,
+            Notes = entry.Notes,
+        };
+
+        public static TimesheetAuditLogDto ToDto(this TimesheetAuditLog log) => new()
+        {
+            Id = log.Id,
+            Action = log.Action,
+            PerformedById = log.PerformedById,
+            PerformedByName = log.PerformedByName,
+            Comment = log.Comment,
+            PreviousStatus = log.PreviousStatus,
+            NewStatus = log.NewStatus,
+            PerformedAt = log.PerformedAt,
+        };
+
+        public static TimesheetSummaryDto ToSummaryDto(this Timesheet t) => new()
+        {
+            Id = t.Id,
+            EmployeeId = t.EmployeeId,
+            Month = t.Month,
+            Year = t.Year,
+            MonthName = new DateTime(t.Year, t.Month, 1).ToString("MMMM yyyy"),
+            TotalWorkingDays = t.TotalWorkingDays,
+            PresentDays = t.PresentDays,
+            LateDays = t.LateDays,
+            OnLeaveDays = t.OnLeaveDays,
+            AbsentDays = t.AbsentDays,
+            TotalHours = t.TotalHours,
+            Status = t.Status,
+            IsLocked = t.IsLocked,
+            CreatedAt = t.CreatedAt,
+            UpdatedAt = t.UpdatedAt,
+            Employee = t.Employee.ToEmployeeSummaryDto(),
+        };
+
+        public static TimesheetDto ToDto(this Timesheet t) => new()
+        {
+            Id = t.Id,
+            EmployeeId = t.EmployeeId,
+            Month = t.Month,
+            Year = t.Year,
+            MonthName = new DateTime(t.Year, t.Month, 1).ToString("MMMM yyyy"),
+            TotalWorkingDays = t.TotalWorkingDays,
+            PresentDays = t.PresentDays,
+            LateDays = t.LateDays,
+            OnLeaveDays = t.OnLeaveDays,
+            AbsentDays = t.AbsentDays,
+            TotalHours = t.TotalHours,
+            Status = t.Status,
+            IsLocked = t.IsLocked,
+            CreatedAt = t.CreatedAt,
+            UpdatedAt = t.UpdatedAt,
+            ApprovedById = t.ApprovedById,
+            ApprovalComment = t.ApprovalComment,
+            RejectionReason = t.RejectionReason,
+            ApprovedAt = t.ApprovedAt,
+            LockedAt = t.LockedAt,
+            LockedBy = t.LockedBy,
+            Employee = t.Employee.ToEmployeeSummaryDto(),
+            ApprovedBy = t.ApprovedBy.ToEmployeeSummaryDto(),
+            Entries = (t.Entries ?? []).Select(e => e.ToDto()).ToList(),
+            AuditLogs = (t.AuditLogs ?? []).Select(a => a.ToDto()).ToList(),
+        };
     }
 }

@@ -1,5 +1,5 @@
 using FluentValidation;
-using HRMS.API.Services;
+using HRMS.API.Models;
 
 namespace HRMS.API.Validations
 {

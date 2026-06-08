@@ -164,6 +164,77 @@ namespace HRMS.API.Migrations
                     b.ToTable("Attendances");
                 });
 
+            modelBuilder.Entity("HRMS.API.Models.Company", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("City")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Industry")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LogoPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RegistrationNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("State")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Street")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Website")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ZipCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("Companies");
+                });
+
             modelBuilder.Entity("HRMS.API.Models.Department", b =>
                 {
                     b.Property<int>("Id")
@@ -217,6 +288,9 @@ namespace HRMS.API.Migrations
                     b.Property<string>("City")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("CompanyId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Country")
                         .HasColumnType("nvarchar(max)");
 
@@ -256,13 +330,22 @@ namespace HRMS.API.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<decimal>("FederalTaxRate")
+                        .HasColumnType("decimal(18,4)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("GrossSalary")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("HireDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("InsuranceRate")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -309,6 +392,8 @@ namespace HRMS.API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("DepartmentId");
 
@@ -370,6 +455,144 @@ namespace HRMS.API.Migrations
                     b.HasIndex("EmployeeId");
 
                     b.ToTable("EmployeeDocuments");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.JobApplication", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CandidateEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CandidateName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CandidatePhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("CoverLetter")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CvFilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("JobPostingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NormalizedCandidateEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobPostingId", "NormalizedCandidateEmail")
+                        .IsUnique();
+
+                    b.ToTable("JobApplications");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.JobPosting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ClosingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmploymentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("JobPostingId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("PostedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Requirements")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Responsibilities")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("SalaryMax")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SalaryMin")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WorkMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobPostingId")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("JobPostings");
                 });
 
             modelBuilder.Entity("HRMS.API.Models.Leave", b =>
@@ -539,11 +762,14 @@ namespace HRMS.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ApprovalComment")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("AreasForImprovement")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("CommunicationRating")
-                        .HasColumnType("int");
+                    b.Property<double?>("CommunicationRating")
+                        .HasColumnType("float");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -554,20 +780,20 @@ namespace HRMS.API.Migrations
                     b.Property<int>("EmployeeId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("LeadershipRating")
-                        .HasColumnType("int");
+                    b.Property<double?>("LeadershipRating")
+                        .HasColumnType("float");
 
                     b.Property<DateTime?>("NextReviewDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("OverallRating")
-                        .HasColumnType("int");
+                    b.Property<double>("OverallRating")
+                        .HasColumnType("float");
 
-                    b.Property<int?>("ProductivityRating")
-                        .HasColumnType("int");
+                    b.Property<double?>("ProductivityRating")
+                        .HasColumnType("float");
 
-                    b.Property<int?>("QualityRating")
-                        .HasColumnType("int");
+                    b.Property<double?>("QualityRating")
+                        .HasColumnType("float");
 
                     b.Property<DateTime>("ReviewPeriodEndDate")
                         .HasColumnType("datetime2");
@@ -589,8 +815,8 @@ namespace HRMS.API.Migrations
                     b.Property<string>("Strengths")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("TeamworkRating")
-                        .HasColumnType("int");
+                    b.Property<double?>("TeamworkRating")
+                        .HasColumnType("float");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -602,6 +828,171 @@ namespace HRMS.API.Migrations
                     b.HasIndex("ReviewedById");
 
                     b.ToTable("PerformanceReviews");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.Timesheet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AbsentDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ApprovalComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ApprovedById")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LateDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OnLeaveDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PresentDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("TotalHours")
+                        .HasColumnType("decimal(7,2)");
+
+                    b.Property<int>("TotalWorkingDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("EmployeeId", "Month", "Year")
+                        .IsUnique();
+
+                    b.ToTable("Timesheets");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.TimesheetAuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NewStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("PerformedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PerformedById")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PerformedByName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TimesheetId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TimesheetId");
+
+                    b.ToTable("TimesheetAuditLogs");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.TimesheetEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AttendanceStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("HoursWorked")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TasksCompleted")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TimesheetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TimesheetId");
+
+                    b.ToTable("TimesheetEntries");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -768,6 +1159,11 @@ namespace HRMS.API.Migrations
 
             modelBuilder.Entity("HRMS.API.Models.Employee", b =>
                 {
+                    b.HasOne("HRMS.API.Models.Company", "Company")
+                        .WithMany("Employees")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("HRMS.API.Models.Department", "Department")
                         .WithMany("Employees")
                         .HasForeignKey("DepartmentId")
@@ -783,6 +1179,8 @@ namespace HRMS.API.Migrations
                         .HasForeignKey("ManagerId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.Navigation("Company");
+
                     b.Navigation("Department");
 
                     b.Navigation("Manager");
@@ -797,6 +1195,17 @@ namespace HRMS.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.JobApplication", b =>
+                {
+                    b.HasOne("HRMS.API.Models.JobPosting", "JobPosting")
+                        .WithMany("Applications")
+                        .HasForeignKey("JobPostingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobPosting");
                 });
 
             modelBuilder.Entity("HRMS.API.Models.Leave", b =>
@@ -845,6 +1254,46 @@ namespace HRMS.API.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("ReviewedBy");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.Timesheet", b =>
+                {
+                    b.HasOne("HRMS.API.Models.Employee", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HRMS.API.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.TimesheetAuditLog", b =>
+                {
+                    b.HasOne("HRMS.API.Models.Timesheet", "Timesheet")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("TimesheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Timesheet");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.TimesheetEntry", b =>
+                {
+                    b.HasOne("HRMS.API.Models.Timesheet", "Timesheet")
+                        .WithMany("Entries")
+                        .HasForeignKey("TimesheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Timesheet");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -898,6 +1347,11 @@ namespace HRMS.API.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HRMS.API.Models.Company", b =>
+                {
+                    b.Navigation("Employees");
+                });
+
             modelBuilder.Entity("HRMS.API.Models.Department", b =>
                 {
                     b.Navigation("Employees");
@@ -908,6 +1362,18 @@ namespace HRMS.API.Migrations
                     b.Navigation("Documents");
 
                     b.Navigation("Subordinates");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.JobPosting", b =>
+                {
+                    b.Navigation("Applications");
+                });
+
+            modelBuilder.Entity("HRMS.API.Models.Timesheet", b =>
+                {
+                    b.Navigation("AuditLogs");
+
+                    b.Navigation("Entries");
                 });
 #pragma warning restore 612, 618
         }

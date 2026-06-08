@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -19,6 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure logging
 builder.Logging.ClearProviders();
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 builder.Logging.AddConsole();
 
 // Add services to the container.
@@ -67,8 +69,17 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Database Configuration
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required. Set it via appsettings or the ConnectionStrings__DefaultConnection environment variable.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        connectionString,
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null)));
 
 // Identity Configuration
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -104,6 +115,25 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var userManager = context.HttpContext.RequestServices
+                .GetRequiredService<UserManager<ApplicationUser>>();
+
+            var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
+            {
+                context.Fail("Unauthorized");
+                return;
+            }
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null || !user.IsActive)
+                context.Fail("Unauthorized");
+        }
+    };
 });
 
 // CORS Configuration
@@ -122,8 +152,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// AutoMapper (commented out - not currently used)
-// builder.Services.AddAutoMapper(typeof(Program));
 
 // HttpClient for external services
 builder.Services.AddHttpClient<IEmailService, EmailService>();
@@ -136,6 +164,10 @@ builder.Services.AddScoped<ILeaveRepository, LeaveRepository>();
 builder.Services.AddScoped<IPayrollRepository, PayrollRepository>();
 builder.Services.AddScoped<IPerformanceRepository, PerformanceRepository>();
 builder.Services.AddScoped<IOnboardingRepository, OnboardingRepository>();
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IJobPostingRepository, JobPostingRepository>();
+builder.Services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
+builder.Services.AddScoped<ITimesheetRepository, TimesheetRepository>();
 
 // Application / domain services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -147,7 +179,10 @@ builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IPayslipService, PayslipService>();
 builder.Services.AddScoped<IPerformanceService, PerformanceService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<ICompanyRegistrationService, CompanyRegistrationService>();
+builder.Services.AddScoped<IRecruitmentService, RecruitmentService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ITimesheetService, TimesheetService>();
 
 var app = builder.Build();
 
@@ -164,11 +199,11 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 // Global error handling
 app.UseMiddleware<ErrorHandlingMiddleware>();

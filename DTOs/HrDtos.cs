@@ -72,20 +72,121 @@ namespace HRMS.API.DTOs
         public int ReviewedById { get; set; }
         public DateTime ReviewPeriodStartDate { get; set; }
         public DateTime ReviewPeriodEndDate { get; set; }
-        public int OverallRating { get; set; }
-        public int? QualityRating { get; set; }
-        public int? ProductivityRating { get; set; }
-        public int? CommunicationRating { get; set; }
-        public int? TeamworkRating { get; set; }
-        public int? LeadershipRating { get; set; }
+        public double OverallRating { get; set; }
+        public double? QualityRating { get; set; }
+        public double? ProductivityRating { get; set; }
+        public double? CommunicationRating { get; set; }
+        public double? TeamworkRating { get; set; }
+        public double? LeadershipRating { get; set; }
         public string? Strengths { get; set; }
         public string? AreasForImprovement { get; set; }
         public string? ReviewerComments { get; set; }
         public string? EmployeeComments { get; set; }
         public string Status { get; set; } = string.Empty;
+        public string? ApprovalComment { get; set; }
         public DateTime? NextReviewDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public EmployeeSummaryDto? Employee { get; set; }
+    }
+
+    public class JobPostingDto
+    {
+        public int Id { get; set; }
+        public string JobPostingId { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string EmploymentType { get; set; } = string.Empty;
+        public string WorkMode { get; set; } = string.Empty;
+        public decimal? SalaryMin { get; set; }
+        public decimal? SalaryMax { get; set; }
+        public string Department { get; set; } = string.Empty;
+        public string? Requirements { get; set; }
+        public string? Responsibilities { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime? ClosingDate { get; set; }
+        public int? PostedById { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public int ApplicationCount { get; set; }
+    }
+
+    public class JobPostingDetailDto : JobPostingDto
+    {
+        public List<JobApplicationDto> Applications { get; set; } = new();
+    }
+
+    public class JobApplicationDto
+    {
+        public int Id { get; set; }
+        public int JobPostingId { get; set; }
+        public string JobPostingPublicId { get; set; } = string.Empty;
+        public string CandidateName { get; set; } = string.Empty;
+        public string CandidateEmail { get; set; } = string.Empty;
+        public string? CandidatePhone { get; set; }
+        public string? CvFilePath { get; set; }
+        public string? CoverLetter { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string? Notes { get; set; }
+        public DateTime AppliedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string? JobTitle { get; set; }
+    }
+
+    public class TimesheetEntryDto
+    {
+        public int Id { get; set; }
+        public int TimesheetId { get; set; }
+        public DateTime Date { get; set; }
+        public string? AttendanceStatus { get; set; }
+        public decimal HoursWorked { get; set; }
+        public string? TasksCompleted { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class TimesheetAuditLogDto
+    {
+        public int Id { get; set; }
+        public string Action { get; set; } = string.Empty;
+        public string PerformedById { get; set; } = string.Empty;
+        public string PerformedByName { get; set; } = string.Empty;
+        public string? Comment { get; set; }
+        public string? PreviousStatus { get; set; }
+        public string? NewStatus { get; set; }
+        public DateTime PerformedAt { get; set; }
+    }
+
+    public class TimesheetSummaryDto
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public string MonthName { get; set; } = string.Empty;
+        public int TotalWorkingDays { get; set; }
+        public int PresentDays { get; set; }
+        public int LateDays { get; set; }
+        public int OnLeaveDays { get; set; }
+        public int AbsentDays { get; set; }
+        public decimal TotalHours { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public bool IsLocked { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public EmployeeSummaryDto? Employee { get; set; }
+    }
+
+    public class TimesheetDto : TimesheetSummaryDto
+    {
+        public int? ApprovedById { get; set; }
+        public string? ApprovalComment { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public DateTime? LockedAt { get; set; }
+        public string? LockedBy { get; set; }
+        public EmployeeSummaryDto? ApprovedBy { get; set; }
+        public List<TimesheetEntryDto> Entries { get; set; } = new();
+        public List<TimesheetAuditLogDto> AuditLogs { get; set; } = new();
     }
 }
