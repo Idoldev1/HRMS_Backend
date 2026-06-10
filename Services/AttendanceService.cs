@@ -167,4 +167,3 @@ namespace HRMS.API.Services
         public string WorkDayEndTime { get; set; } = "17:00";
     }
 }
-
