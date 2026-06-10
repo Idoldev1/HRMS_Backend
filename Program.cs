@@ -186,17 +186,17 @@ builder.Services.AddScoped<ITimesheetService, TimesheetService>();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var roleName in Roles.All)
-    {
-        if (!await roleManager.RoleExistsAsync(roleName))
-        {
-            await roleManager.CreateAsync(new IdentityRole(roleName));
-        }
-    }
-}
+// using (var scope = app.Services.CreateScope())
+// {
+//     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//     foreach (var roleName in Roles.All)
+//     {
+//         if (!await roleManager.RoleExistsAsync(roleName))
+//         {
+//             await roleManager.CreateAsync(new IdentityRole(roleName));
+//         }
+//     }
+// }
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
