@@ -65,3 +65,4 @@ bld/
 # appsettings.Development.json (if contains secrets)
 appsettings.Development.json
 appsettings.Production.json
+Migrations/
