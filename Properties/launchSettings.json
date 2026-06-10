@@ -9,7 +9,7 @@
       "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__DefaultConnection": "Server=PSALMSON\\SQLEXPRESS;Database=HRMSDB;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true;",
+        "ConnectionStrings__DefaultConnection": "Server=PSALMSON\\SQLEXPRESS;Database=HRMSDB;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true",
         "JwtSettings__SecretKey": "YourSuperSecretKeyForJWTTokenGeneration12345",
         "JwtSettings__Issuer": "HRMS",
         "JwtSettings__Audience": "HRMSUsers",
