@@ -124,7 +124,7 @@ namespace HRMS.API.Services
 
                 var createdEmployee = await _employeeRepository.AddAsync(employee);
                 _logger.LogInformation("User registered successfully: {Email}, EmployeeId={EmployeeId}, Role={Role}", model.Email, employeeId, normalizedRole);
-                var token = GenerateJwtToken(user, createdEmployee.Id);
+                var token = GenerateJwtToken(user, createdEmployee.EmployeeId);
                 return (true, token, null);
             }
             catch (Exception ex)
@@ -179,7 +179,7 @@ namespace HRMS.API.Services
             }
 
             _logger.LogInformation("Login successful for {Email}", model.Email);
-            var token = GenerateJwtToken(user, employee?.Id);
+            var token = GenerateJwtToken(user, employee?.EmployeeId);
             return (true, token, user, employee, null);
         }
 
@@ -314,7 +314,7 @@ namespace HRMS.API.Services
         private static string GetPasswordResetOtpCacheKey(string normalizedEmail) =>
             $"auth:password-reset-otp:{normalizedEmail}";
 
-        public string GenerateJwtToken(ApplicationUser user, int? numericEmployeeId = null)
+        public string GenerateJwtToken(ApplicationUser user, string? employeeId = null)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"]
@@ -330,8 +330,8 @@ namespace HRMS.API.Services
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            if (numericEmployeeId.HasValue)
-                claims.Add(new Claim("EmployeeId", numericEmployeeId.Value.ToString()));
+            if (!string.IsNullOrEmpty(employeeId))
+                claims.Add(new Claim("EmployeeId", employeeId));
 
             var expiryMinutes = Convert.ToDouble(jwtSettings["ExpirationInMinutes"] ?? "20");
 

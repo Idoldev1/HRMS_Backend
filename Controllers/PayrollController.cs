@@ -1,5 +1,6 @@
 using HRMS.API.DTOs;
 using HRMS.API.Models;
+using HRMS.API.Repositories;
 using HRMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +15,16 @@ namespace HRMS.API.Controllers
     {
         private readonly IPayrollService _payrollService;
         private readonly IPayslipService _payslipService;
+        private readonly IEmployeeRepository _employeeRepository;
 
-        public PayrollController(IPayrollService payrollService, IPayslipService payslipService)
+        public PayrollController(
+            IPayrollService payrollService,
+            IPayslipService payslipService,
+            IEmployeeRepository employeeRepository)
         {
             _payrollService = payrollService;
             _payslipService = payslipService;
+            _employeeRepository = employeeRepository;
         }
 
         // ── Query ─────────────────────────────────────────────────────────────
@@ -37,11 +43,15 @@ namespace HRMS.API.Controllers
         [HttpGet("my")]
         public async Task<ActionResult<IEnumerable<PayrollDto>>> GetMyPayrolls([FromQuery] string? status)
         {
-            var empIdClaim = User.FindFirstValue("EmployeeId");
-            if (!int.TryParse(empIdClaim, out var empId))
+            var employeeStringId = User.FindFirstValue("EmployeeId");
+            if (string.IsNullOrEmpty(employeeStringId))
                 return Unauthorized("Employee profile not found.".ToMessageDto());
 
-            var payrolls = await _payrollService.GetPayrollsAsync(empId, status);
+            var employee = await _employeeRepository.GetByEmployeeIdAsync(employeeStringId);
+            if (employee is null)
+                return Unauthorized("Employee profile not found.".ToMessageDto());
+
+            var payrolls = await _payrollService.GetPayrollsAsync(employee.Id, status);
             return Ok(payrolls.Select(payroll => payroll.ToDto()));
         }
 
@@ -101,8 +111,13 @@ namespace HRMS.API.Controllers
         [Authorize(Roles = "Admin,HR,Finance")]
         public async Task<ActionResult<PayrollDto>> ProcessPayroll(int id)
         {
-            var empIdClaim = User.FindFirstValue("EmployeeId");
-            int.TryParse(empIdClaim, out var processedBy);
+            var employeeStringId = User.FindFirstValue("EmployeeId");
+            int processedBy = 0;
+            if (!string.IsNullOrEmpty(employeeStringId))
+            {
+                var employee = await _employeeRepository.GetByEmployeeIdAsync(employeeStringId);
+                processedBy = employee?.Id ?? 0;
+            }
 
             var payroll = await _payrollService.ProcessPayrollAsync(id, processedBy);
             return Ok(payroll.ToDto());
@@ -143,7 +158,7 @@ namespace HRMS.API.Controllers
         public async Task<ActionResult<PayrollExportDto>> ExportForAccounting(int id, [FromQuery] string format = "CSV")
         {
             var data = await _payslipService.ExportToAccountingSystemAsync(id, format);
-            var ext  = format.ToUpper() == "JSON" ? "json" : "csv";
+            var ext = format.ToUpper() == "JSON" ? "json" : "csv";
             return Ok(new PayrollExportDto { Data = data, Filename = $"payroll-export-{id}.{ext}" });
         }
     }

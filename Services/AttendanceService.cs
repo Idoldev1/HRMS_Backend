@@ -1,164 +1,276 @@
+using HRMS.API.Common;
+using HRMS.API.Contracts.Attendance;
 using HRMS.API.Models;
 using HRMS.API.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace HRMS.API.Services
 {
     public interface IAttendanceService
     {
-        Task<IEnumerable<Attendance>> GetAttendancesAsync(int? employeeId, DateTime? startDate, DateTime? endDate);
-        Task<Attendance> CreateAttendanceAsync(Attendance attendance);
-        Task UpdateAttendanceAsync(int id, Attendance attendance);
+        Task<Result<IEnumerable<Attendance>>> GetAttendancesAsync(string? employeeId, DateTime? startDate, DateTime? endDate);
+        Task<Result<Attendance>> CreateAttendanceAsync(string employeeId, MarkAttendanceRequest request);
+        Task<Result> UpdateAttendanceAsync(int id, Attendance attendance);
     }
 
     public class AttendanceService : IAttendanceService
     {
         private readonly IAttendanceRepository _attendanceRepository;
+        private readonly IWorkLocationRepository _workLocationRepository;
+        private readonly IEmployeeDeviceRepository _deviceRepository;
+        private readonly IEmployeeRepository _employeeRepository;
         private readonly ILogger<AttendanceService> _logger;
-        private readonly AttendanceSettings _attendanceSettings;
+        private readonly AttendanceSettings _settings;
 
         public AttendanceService(
             IAttendanceRepository attendanceRepository,
+            IWorkLocationRepository workLocationRepository,
+            IEmployeeDeviceRepository deviceRepository,
+            IEmployeeRepository employeeRepository,
             ILogger<AttendanceService> logger,
             IConfiguration configuration)
         {
             _attendanceRepository = attendanceRepository;
+            _workLocationRepository = workLocationRepository;
+            _deviceRepository = deviceRepository;
+            _employeeRepository = employeeRepository;
             _logger = logger;
-            _attendanceSettings = configuration.GetSection("AttendanceSettings").Get<AttendanceSettings>()
+            _settings = configuration.GetSection("AttendanceSettings").Get<AttendanceSettings>()
                 ?? new AttendanceSettings();
         }
 
-        public async Task<IEnumerable<Attendance>> GetAttendancesAsync(int? employeeId, DateTime? startDate, DateTime? endDate)
+        public async Task<Result<IEnumerable<Attendance>>> GetAttendancesAsync(
+            string? employeeId, DateTime? startDate, DateTime? endDate)
         {
             _logger.LogInformation(
-                "Retrieving attendance records. EmployeeId: {EmployeeId}, StartDate: {StartDate}, EndDate: {EndDate}",
+                "Fetching attendance records. EmployeeId: {EmployeeId}, StartDate: {StartDate}, EndDate: {EndDate}",
                 employeeId, startDate, endDate);
 
-            await AutoCloseStaleAttendancesAsync(employeeId);
-
-            var attendances = await _attendanceRepository.GetByDateRangeAsync(employeeId, startDate, endDate);
-
-            _logger.LogInformation("Retrieved {Count} attendance records.", attendances.Count());
-            return attendances.OrderByDescending(a => a.Date);
-        }
-
-        public async Task<Attendance> CreateAttendanceAsync(Attendance attendance)
-        {
-            _logger.LogInformation("Creating attendance record for employee {EmployeeId}.", attendance.EmployeeId);
-
-            await AutoCloseStaleAttendancesAsync(attendance.EmployeeId);
-
-            var today = DateTime.Today;
-            var todayAttendances = await _attendanceRepository.GetByDateRangeAsync(attendance.EmployeeId, today, today);
-            var hasOpenShift = todayAttendances.Any(a => !a.CheckOut.HasValue);
-
-            if (hasOpenShift)
+            int? resolvedId = null;
+            if (employeeId is not null)
             {
-                _logger.LogInformation(
-                    "Rejected duplicate check-in for employee {EmployeeId} due to existing open shift.",
-                    attendance.EmployeeId);
-                throw new InvalidOperationException("You already have an open shift for today. Please check out first.");
+                var emp = await _employeeRepository.GetByEmployeeIdAsync(employeeId);
+                if (emp is null)
+                {
+                    _logger.LogWarning("GetAttendances: employee {EmployeeId} not found", employeeId);
+                    return Result<IEnumerable<Attendance>>.NotFound($"Employee '{employeeId}' not found.");
+                }
+                resolvedId = emp.Id;
             }
 
-            attendance.Date = DateTime.Today;
-            attendance.CheckIn = DateTime.UtcNow;
-            attendance.Status = IsLateArrival(DateTime.Now.TimeOfDay) ? "Late" : "Present";
-            attendance.CreatedAt = DateTime.UtcNow;
-            attendance.UpdatedAt = DateTime.UtcNow;
+            await AutoCloseStaleAttendancesAsync(resolvedId);
 
-            var createdAttendance = await _attendanceRepository.AddAsync(attendance);
+            var records = await _attendanceRepository.GetByDateRangeAsync(resolvedId, startDate, endDate);
+            var ordered = records.OrderByDescending(a => a.Date).ToList();
 
-            _logger.LogInformation("Attendance record created with id {AttendanceId}.", createdAttendance.Id);
-            return createdAttendance;
+            _logger.LogInformation("Returned {Count} attendance records for employee {EmployeeId}",
+                ordered.Count, employeeId);
+
+            return Result<IEnumerable<Attendance>>.Ok(ordered);
         }
 
-        public async Task UpdateAttendanceAsync(int id, Attendance attendance)
+        public async Task<Result<Attendance>> CreateAttendanceAsync(string employeeId, MarkAttendanceRequest request)
         {
-            _logger.LogInformation("Updating attendance record with id {AttendanceId}.", id);
+            _logger.LogInformation(
+                "Processing check-in for employee {EmployeeId}. DeviceId: {DeviceId}, Lat: {Latitude}, Lon: {Longitude}",
+                employeeId, request.DeviceId, request.Latitude, request.Longitude);
+
+            var employee = await _employeeRepository.GetByEmployeeIdAsync(employeeId);
+            if (employee is null)
+            {
+                _logger.LogWarning("Check-in rejected: employee {EmployeeId} not found", employeeId);
+                return Result<Attendance>.NotFound($"Employee '{employeeId}' not found.");
+            }
+
+            var numericId = employee.Id;
+            await AutoCloseStaleAttendancesAsync(numericId);
+
+            // --- Device validation ---
+            var device = await _deviceRepository.GetByDeviceIdAndEmployeeAsync(request.DeviceId, numericId);
+            if (device is null)
+            {
+                _logger.LogWarning(
+                    "Check-in rejected for employee {EmployeeId}: device {DeviceId} is not registered",
+                    employeeId, request.DeviceId);
+                return Result<Attendance>.Fail("This device is not registered. Please register your device or contact HR.");
+            }
+
+            if (!device.IsActive)
+            {
+                _logger.LogWarning(
+                    "Check-in rejected for employee {EmployeeId}: device {DeviceId} is inactive",
+                    employeeId, request.DeviceId);
+                return Result<Attendance>.Fail("This device has been deactivated. Contact HR to reactivate it.");
+            }
+
+            // --- Work location check ---
+            var assignedLocations = (await _workLocationRepository.GetByEmployeeIdAsync(numericId)).ToList();
+            if (assignedLocations.Count == 0)
+            {
+                _logger.LogWarning(
+                    "Check-in rejected for employee {EmployeeId}: no active work locations assigned", employeeId);
+                return Result<Attendance>.Fail("No active work locations are assigned to you. Contact HR.");
+            }
+
+            // --- Geofencing: Haversine against each assigned location ---
+            WorkLocation? matchedLocation = null;
+            double closestDistance = double.MaxValue;
+
+            foreach (var location in assignedLocations)
+            {
+                double distance = CalculateDistanceMeters(
+                    (double)request.Latitude, (double)request.Longitude,
+                    (double)location.Latitude, (double)location.Longitude);
+
+                _logger.LogDebug(
+                    "Employee {EmployeeId} is {Distance:F1}m from '{LocationName}' (allowed: {Radius}m)",
+                    employeeId, distance, location.Name, location.AllowedRadiusMeters);
+
+                if (distance < closestDistance)
+                    closestDistance = distance;
+
+                if (distance <= location.AllowedRadiusMeters)
+                {
+                    matchedLocation = location;
+                    break;
+                }
+            }
+
+            if (matchedLocation is null)
+            {
+                _logger.LogWarning(
+                    "Check-in rejected for employee {EmployeeId}: outside all approved locations. Closest: {Distance:F0}m",
+                    employeeId, closestDistance);
+                return Result<Attendance>.Fail(
+                    $"You are not within any approved work location. Closest site is {closestDistance:F0}m away.");
+            }
+
+            // --- Duplicate check-in guard ---
+            var today = DateTime.Today;
+            var todayRecords = await _attendanceRepository.GetByDateRangeAsync(numericId, today, today);
+            if (todayRecords.Any(a => !a.CheckOut.HasValue))
+            {
+                _logger.LogWarning(
+                    "Duplicate check-in attempt by employee {EmployeeId} on {Date}", employeeId, today);
+                return Result<Attendance>.Conflict("You already have an open shift for today. Please check out first.");
+            }
+
+            // --- Create record ---
+            var checkInTime = DateTime.Now.TimeOfDay;
+            var attendance = new Attendance
+            {
+                EmployeeId = numericId,
+                Date = today,
+                CheckIn = DateTime.UtcNow,
+                Status = IsLateArrival(checkInTime) ? "Late" : "Present",
+                Location = matchedLocation.Name,
+                DeviceId = request.DeviceId,
+                CheckInLatitude = request.Latitude,
+                CheckInLongitude = request.Longitude,
+                WorkLocationId = matchedLocation.Id,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+
+            var created = await _attendanceRepository.AddAsync(attendance);
+
+            device.LastUsedAt = DateTime.UtcNow;
+            await _deviceRepository.UpdateAsync(device);
+
+            _logger.LogInformation(
+                "Check-in successful. AttendanceId: {AttendanceId}, EmployeeId: {EmployeeId}, Location: '{Location}', Status: {Status}",
+                created.Id, employeeId, matchedLocation.Name, created.Status);
+
+            return Result<Attendance>.Ok(created);
+        }
+
+        public async Task<Result> UpdateAttendanceAsync(int id, Attendance attendance)
+        {
+            _logger.LogInformation("Updating attendance record {AttendanceId}", id);
 
             if (id != attendance.Id)
             {
-                _logger.LogInformation($"Attendance id mismatch. Route id {id}, body id {attendance.Id}.");
-                throw new ArgumentException("Attendance id mismatch.");
+                _logger.LogWarning(
+                    "Attendance id mismatch. Route id: {RouteId}, Body id: {BodyId}", id, attendance.Id);
+                return Result.Fail("Attendance id in the URL does not match the body.");
             }
 
-            var existingAttendance = await _attendanceRepository.GetByIdAsync(id);
-            if (existingAttendance == null)
+            var existing = await _attendanceRepository.GetByIdAsync(id);
+            if (existing is null)
             {
-                _logger.LogInformation($"Attendance record with id {id} not found.");
-                throw new KeyNotFoundException($"Attendance record with id {id} not found.");
+                _logger.LogWarning("Attendance record {AttendanceId} not found for update", id);
+                return Result.NotFound($"Attendance record with id {id} not found.");
             }
 
-            existingAttendance.CheckOut = attendance.CheckOut;
-            existingAttendance.Notes = attendance.Notes;
-            existingAttendance.Location = string.IsNullOrWhiteSpace(attendance.Location)
-                ? existingAttendance.Location
-                : attendance.Location;
+            existing.CheckOut = attendance.CheckOut;
+            existing.Notes = attendance.Notes;
 
             if (attendance.BreakDuration >= 0)
+                existing.BreakDuration = attendance.BreakDuration;
+
+            if (existing.CheckOut.HasValue && existing.CheckIn != default)
             {
-                existingAttendance.BreakDuration = attendance.BreakDuration;
+                var duration = existing.CheckOut.Value - existing.CheckIn;
+                var workedHours = (decimal)duration.TotalHours - (existing.BreakDuration / 60m);
+                existing.TotalHours = workedHours < 0 ? 0 : workedHours;
             }
 
-            if (existingAttendance.CheckOut.HasValue && existingAttendance.CheckIn != default)
-            {
-                var duration = existingAttendance.CheckOut.Value - existingAttendance.CheckIn;
-                var workedHours = (decimal)duration.TotalHours - (existingAttendance.BreakDuration / 60m);
-                existingAttendance.TotalHours = workedHours < 0 ? 0 : workedHours;
-                existingAttendance.Status = existingAttendance.Status;
-                _logger.LogInformation($"Calculated total hours {existingAttendance.TotalHours} for attendance id {id}.");
-            }
-            else
-            {
-                existingAttendance.Status = string.IsNullOrWhiteSpace(attendance.Status)
-                    ? existingAttendance.Status
-                    : attendance.Status;
-            }
+            existing.UpdatedAt = DateTime.UtcNow;
+            await _attendanceRepository.UpdateAsync(existing);
 
-            existingAttendance.UpdatedAt = DateTime.Now;
-            await _attendanceRepository.UpdateAsync(existingAttendance);
+            _logger.LogInformation(
+                "Attendance record {AttendanceId} updated. TotalHours: {TotalHours}, CheckOut: {CheckOut}",
+                id, existing.TotalHours, existing.CheckOut);
 
-            _logger.LogInformation($"Attendance record with id {id} updated successfully.");
+            return Result.Ok();
         }
 
         private bool IsLateArrival(TimeSpan checkInTime)
         {
-            if (!TimeSpan.TryParse(_attendanceSettings.WorkDayStartTime, out var workStart))
+            if (!TimeSpan.TryParse(_settings.WorkDayStartTime, out var workStart))
                 workStart = TimeSpan.FromHours(8);
             return checkInTime > workStart;
         }
 
-        private async Task AutoCloseStaleAttendancesAsync(int? employeeId = null)
+        private async Task AutoCloseStaleAttendancesAsync(int? numericEmployeeId = null)
         {
-            if (!TimeSpan.TryParse(_attendanceSettings.WorkDayEndTime, out var workEnd))
+            if (!TimeSpan.TryParse(_settings.WorkDayEndTime, out var workEnd))
                 workEnd = TimeSpan.FromHours(17);
 
-            var today = DateTime.Today;
-            var staleAttendances = await _attendanceRepository.GetOpenAttendancesBeforeDateAsync(today, employeeId);
+            var stale = await _attendanceRepository.GetOpenAttendancesBeforeDateAsync(DateTime.Today, numericEmployeeId);
 
-            foreach (var staleAttendance in staleAttendances)
+            foreach (var record in stale)
             {
-                var autoCheckOut = staleAttendance.Date.Date.Add(workEnd);
-                staleAttendance.CheckOut = autoCheckOut;
-                staleAttendance.Status = staleAttendance.Status;
+                var autoCheckOut = record.Date.Date.Add(workEnd);
+                record.CheckOut = autoCheckOut;
 
-                if (staleAttendance.CheckIn != default)
+                if (record.CheckIn != default)
                 {
-                    var duration = autoCheckOut - staleAttendance.CheckIn;
-                    var workedHours = (decimal)duration.TotalHours - (staleAttendance.BreakDuration / 60m);
-                    staleAttendance.TotalHours = workedHours < 0 ? 0 : workedHours;
+                    var duration = autoCheckOut - record.CheckIn;
+                    var workedHours = (decimal)duration.TotalHours - (record.BreakDuration / 60m);
+                    record.TotalHours = workedHours < 0 ? 0 : workedHours;
                 }
 
-                staleAttendance.UpdatedAt = DateTime.Now;
-
-                await _attendanceRepository.UpdateAsync(staleAttendance);
+                record.UpdatedAt = DateTime.UtcNow;
+                await _attendanceRepository.UpdateAsync(record);
 
                 _logger.LogInformation(
-                    "Auto-closed stale attendance {AttendanceId} for EmployeeId={EmployeeId} with checkout at {CheckOut}",
-                    staleAttendance.Id, staleAttendance.EmployeeId, autoCheckOut);
+                    "Auto-closed stale attendance {AttendanceId} for employee {EmployeeId}. AutoCheckOut: {CheckOut}",
+                    record.Id, record.EmployeeId, autoCheckOut);
             }
         }
+
+        private static double CalculateDistanceMeters(double lat1, double lon1, double lat2, double lon2)
+        {
+            const double earthRadius = 6_371_000;
+            var dLat = ToRadians(lat2 - lat1);
+            var dLon = ToRadians(lon2 - lon1);
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+                    + Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2))
+                    * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            return earthRadius * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        }
+
+        private static double ToRadians(double degrees) => degrees * Math.PI / 180;
     }
 
     public class AttendanceSettings

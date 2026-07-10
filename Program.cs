@@ -168,12 +168,17 @@ builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IJobPostingRepository, JobPostingRepository>();
 builder.Services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
 builder.Services.AddScoped<ITimesheetRepository, TimesheetRepository>();
+builder.Services.AddScoped<IWorkLocationRepository, WorkLocationRepository>();
+builder.Services.AddScoped<IEmployeeDeviceRepository, EmployeeDeviceRepository>();
+builder.Services.AddScoped<IEmployeeWorkLocationRepository, EmployeeWorkLocationRepository>();
 
 // Application / domain services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IWorkLocationService, WorkLocationService>();
+builder.Services.AddScoped<IEmployeeDeviceService, EmployeeDeviceService>();
 builder.Services.AddScoped<ILeaveService, LeaveService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IPayslipService, PayslipService>();
@@ -208,7 +213,12 @@ var app = builder.Build();
 // Global error handling
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
-app.UseHttpsRedirection();
+// Disable HTTPS redirect in development to allow HTTP from mobile clients
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("AllowReactApp");
 app.UseStaticFiles(); // serve uploaded files from wwwroot if needed
 app.UseAuthentication();

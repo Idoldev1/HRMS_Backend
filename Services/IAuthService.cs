@@ -10,6 +10,6 @@ namespace HRMS.API.Services
         Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string userId, ChangePasswordModel model);
         Task RequestPasswordResetOtpAsync(RequestPasswordResetOtpModel model);
         Task<(bool Success, string? ErrorMessage)> ResetPasswordWithOtpAsync(ResetPasswordWithOtpModel model);
-        string GenerateJwtToken(ApplicationUser user, int? numericEmployeeId = null);
+        string GenerateJwtToken(ApplicationUser user, string? employeeId = null);
     }
 }

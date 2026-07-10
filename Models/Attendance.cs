@@ -39,6 +39,20 @@ namespace HRMS.API.Models
         [StringLength(20)]
         public string Location { get; set; } = "Office";
 
+        [StringLength(255)]
+        public string? DeviceId { get; set; }
+
+        [Column(TypeName = "decimal(9,6)")]
+        public decimal? CheckInLatitude { get; set; }
+
+        [Column(TypeName = "decimal(9,6)")]
+        public decimal? CheckInLongitude { get; set; }
+
+        public int? WorkLocationId { get; set; }
+
+        [ForeignKey("WorkLocationId")]
+        public WorkLocation? WorkLocation { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
     }
