@@ -43,6 +43,47 @@ namespace HRMS.API.DTOs
         public string Status { get; set; } = string.Empty;
         public string? Notes { get; set; }
         public string Location { get; set; } = string.Empty;
+        public string? DeviceId { get; set; }
+        public decimal? CheckInLatitude { get; set; }
+        public decimal? CheckInLongitude { get; set; }
+        public int? WorkLocationId { get; set; }
+        public EmployeeSummaryDto? Employee { get; set; }
+    }
+
+    public class WorkLocationDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public double AllowedRadiusMeters { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public class EmployeeWorkLocationDto
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public int WorkLocationId { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime AssignedAt { get; set; }
+        public WorkLocationDto? WorkLocation { get; set; }
+        public EmployeeSummaryDto? Employee { get; set; }
+    }
+
+    public class EmployeeDeviceDto
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public string DeviceId { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public string? DeviceType { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime RegisteredAt { get; set; }
+        public DateTime? LastUsedAt { get; set; }
         public EmployeeSummaryDto? Employee { get; set; }
     }
 

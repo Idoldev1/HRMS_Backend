@@ -1,3 +1,4 @@
+using HRMS.API.Common;
 using HRMS.API.Constants;
 using HRMS.API.Contracts.Attendance;
 using HRMS.API.DTOs;
@@ -27,30 +28,68 @@ namespace HRMS.API.Controllers
             var role = User.FindFirstValue(ClaimTypes.Role);
             var isAdminOrHr = role == Roles.Admin || role == Roles.HR;
 
-            int? employeeId = request.EmployeeId;
+            string? employeeId = request.EmployeeId;
             if (!isAdminOrHr)
             {
-                if (!int.TryParse(User.FindFirstValue("EmployeeId"), out var currentEmployeeId))
+                employeeId = User.FindFirstValue("EmployeeId");
+                if (string.IsNullOrEmpty(employeeId))
                     return Forbid();
-                employeeId = currentEmployeeId;
             }
 
-            var attendances = await _attendanceService.GetAttendancesAsync(employeeId, request.StartDate, request.EndDate);
-            return Ok(attendances.Select(a => a.ToDto()));
+            var result = await _attendanceService.GetAttendancesAsync(employeeId, request.StartDate, request.EndDate);
+            return result.IsSuccess
+                ? Ok(result.Value!.Select(a => a.ToDto()))
+                : ToActionResult(result);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<AttendanceDto>> MarkAttendance(Attendance attendance)
+        [HttpPost("check-in")]
+        public async Task<ActionResult<AttendanceDto>> CheckIn([FromBody] MarkAttendanceRequest request)
         {
-            var created = await _attendanceService.CreateAttendanceAsync(attendance);
-            return Ok(created.ToDto());
+            var employeeId = User.FindFirstValue("EmployeeId");
+            if (string.IsNullOrEmpty(employeeId))
+                return Forbid();
+
+            var result = await _attendanceService.CreateAttendanceAsync(employeeId, request);
+            return result.IsSuccess
+                ? Ok(result.Value!.ToDto())
+                : ToActionResult(result);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}/check-out")]
+        public async Task<IActionResult> CheckOut(int id, [FromBody] CheckOutRequest request)
+        {
+            var attendance = new Attendance
+            {
+                Id = id,
+                CheckOut = DateTime.UtcNow,
+                BreakDuration = request.BreakDuration,
+                Notes = request.Notes,
+            };
+
+            var result = await _attendanceService.UpdateAttendanceAsync(id, attendance);
+            return result.IsSuccess ? NoContent() : ToActionResult(result);
+        }
+
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.HR}")]
         public async Task<IActionResult> UpdateAttendance(int id, Attendance attendance)
         {
-            await _attendanceService.UpdateAttendanceAsync(id, attendance);
-            return NoContent();
+            var result = await _attendanceService.UpdateAttendanceAsync(id, attendance);
+            return result.IsSuccess ? NoContent() : ToActionResult(result);
         }
+
+        private ActionResult ToActionResult<T>(Result<T> result) => result.ErrorKind switch
+        {
+            ResultErrorKind.NotFound => NotFound(new MessageDto(result.Error!)),
+            ResultErrorKind.Conflict => Conflict(new MessageDto(result.Error!)),
+            _ => BadRequest(new MessageDto(result.Error!)),
+        };
+
+        private ActionResult ToActionResult(Result result) => result.ErrorKind switch
+        {
+            ResultErrorKind.NotFound => NotFound(new MessageDto(result.Error!)),
+            ResultErrorKind.Conflict => Conflict(new MessageDto(result.Error!)),
+            _ => BadRequest(new MessageDto(result.Error!)),
+        };
     }
 }

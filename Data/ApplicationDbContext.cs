@@ -25,6 +25,9 @@ namespace HRMS.API.Data
         public DbSet<Timesheet> Timesheets { get; set; }
         public DbSet<TimesheetEntry> TimesheetEntries { get; set; }
         public DbSet<TimesheetAuditLog> TimesheetAuditLogs { get; set; }
+        public DbSet<WorkLocation> WorkLocations { get; set; }
+        public DbSet<EmployeeDevice> EmployeeDevices { get; set; }
+        public DbSet<EmployeeWorkLocation> EmployeeWorkLocations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -165,6 +168,45 @@ namespace HRMS.API.Data
                       .WithMany(t => t.AuditLogs)
                       .HasForeignKey(a => a.TimesheetId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // WorkLocation Configuration
+            builder.Entity<WorkLocation>(entity =>
+            {
+                entity.HasIndex(w => w.Name).IsUnique();
+            });
+
+            // EmployeeDevice Configuration
+            builder.Entity<EmployeeDevice>(entity =>
+            {
+                entity.HasIndex(d => new { d.EmployeeId, d.DeviceId }).IsUnique();
+                entity.HasOne(d => d.Employee)
+                      .WithMany()
+                      .HasForeignKey(d => d.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // EmployeeWorkLocation Configuration
+            builder.Entity<EmployeeWorkLocation>(entity =>
+            {
+                entity.HasIndex(ewl => new { ewl.EmployeeId, ewl.WorkLocationId }).IsUnique();
+                entity.HasOne(ewl => ewl.Employee)
+                      .WithMany()
+                      .HasForeignKey(ewl => ewl.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(ewl => ewl.WorkLocation)
+                      .WithMany(w => w.EmployeeWorkLocations)
+                      .HasForeignKey(ewl => ewl.WorkLocationId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Attendance -> WorkLocation (no cascade from WorkLocation side)
+            builder.Entity<Attendance>(entity =>
+            {
+                entity.HasOne(a => a.WorkLocation)
+                      .WithMany()
+                      .HasForeignKey(a => a.WorkLocationId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

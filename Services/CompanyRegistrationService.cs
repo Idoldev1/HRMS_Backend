@@ -154,7 +154,7 @@ namespace HRMS.API.Services
                 };
 
                 var createdEmployee = await _employeeRepository.AddAsync(employee);
-                var token = _authService.GenerateJwtToken(user, createdEmployee.Id);
+                var token = _authService.GenerateJwtToken(user, createdEmployee.EmployeeId);
 
                 var response = new CompanyRegistrationResponseDto
                 {

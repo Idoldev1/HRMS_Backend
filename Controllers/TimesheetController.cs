@@ -1,6 +1,7 @@
 using HRMS.API.Constants;
 using HRMS.API.Contracts.Timesheet;
 using HRMS.API.DTOs;
+using HRMS.API.Repositories;
 using HRMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +15,12 @@ namespace HRMS.API.Controllers
     public class TimesheetController : ControllerBase
     {
         private readonly ITimesheetService _timesheetService;
+        private readonly IEmployeeRepository _employeeRepository;
 
-        public TimesheetController(ITimesheetService timesheetService)
+        public TimesheetController(ITimesheetService timesheetService, IEmployeeRepository employeeRepository)
         {
             _timesheetService = timesheetService;
+            _employeeRepository = employeeRepository;
         }
 
         /// <summary>
@@ -27,7 +30,7 @@ namespace HRMS.API.Controllers
         [HttpPost("generate")]
         public async Task<ActionResult<TimesheetDto>> GenerateTimesheet([FromBody] GenerateTimesheetRequest request)
         {
-            var (employeeId, userId, fullName) = ExtractClaims();
+            var (employeeId, userId, fullName) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
             var role = User.FindFirstValue(ClaimTypes.Role);
@@ -40,7 +43,9 @@ namespace HRMS.API.Controllers
             if (!isAdminOrHr && request.EmployeeId.HasValue && request.EmployeeId.Value != employeeId.Value)
                 return Forbid();
 
-            var (timesheet, error) = await _timesheetService.GenerateTimesheetAsync(targetEmployeeId, request.Month, request.Year, userId, fullName);
+            var (timesheet, error) = await _timesheetService.GenerateTimesheetAsync(
+                targetEmployeeId, request.Month, request.Year, userId, fullName);
+
             if (error != null) return BadRequest(new { message = error });
             return Ok(timesheet!.ToDto());
         }
@@ -51,7 +56,7 @@ namespace HRMS.API.Controllers
         [HttpPost("search")]
         public async Task<ActionResult<IEnumerable<TimesheetSummaryDto>>> GetTimesheets([FromBody] GetTimesheetsRequest request)
         {
-            var (employeeId, _, _) = ExtractClaims();
+            var (employeeId, _, _) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
             var role = User.FindFirstValue(ClaimTypes.Role);
@@ -59,7 +64,9 @@ namespace HRMS.API.Controllers
 
             var targetEmployeeId = isAdminOrHr ? request.EmployeeId : employeeId;
 
-            var timesheets = await _timesheetService.GetTimesheetsAsync(targetEmployeeId, request.Month, request.Year, request.Status);
+            var timesheets = await _timesheetService.GetTimesheetsAsync(
+                targetEmployeeId, request.Month, request.Year, request.Status);
+
             return Ok(timesheets.Select(t => t.ToSummaryDto()));
         }
 
@@ -69,7 +76,7 @@ namespace HRMS.API.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<TimesheetDto>> GetTimesheet(int id)
         {
-            var (employeeId, _, _) = ExtractClaims();
+            var (employeeId, _, _) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
             var timesheet = await _timesheetService.GetTimesheetByIdAsync(id);
@@ -90,7 +97,7 @@ namespace HRMS.API.Controllers
         [HttpPut("{id:int}/entries")]
         public async Task<ActionResult<TimesheetDto>> UpdateEntries(int id, [FromBody] UpdateTimesheetEntriesRequest request)
         {
-            var (employeeId, _, _) = ExtractClaims();
+            var (employeeId, _, _) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
             var timesheet = await _timesheetService.UpdateEntriesAsync(id, employeeId.Value, request.Entries);
@@ -103,7 +110,7 @@ namespace HRMS.API.Controllers
         [HttpPost("{id:int}/submit")]
         public async Task<ActionResult<TimesheetDto>> SubmitTimesheet(int id)
         {
-            var (employeeId, userId, fullName) = ExtractClaims();
+            var (employeeId, userId, fullName) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
             var timesheet = await _timesheetService.SubmitTimesheetAsync(id, employeeId.Value, userId, fullName);
@@ -128,10 +135,12 @@ namespace HRMS.API.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.HR},{Roles.Manager}")]
         public async Task<ActionResult<TimesheetDto>> ApproveTimesheet(int id, [FromBody] ApproveTimesheetRequest request)
         {
-            var (employeeId, userId, fullName) = ExtractClaims();
+            var (employeeId, userId, fullName) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
-            var timesheet = await _timesheetService.ApproveTimesheetAsync(id, employeeId.Value, request.Comment ?? string.Empty, userId, fullName);
+            var timesheet = await _timesheetService.ApproveTimesheetAsync(
+                id, employeeId.Value, request.Comment ?? string.Empty, userId, fullName);
+
             return Ok(timesheet.ToDto());
         }
 
@@ -142,10 +151,12 @@ namespace HRMS.API.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.HR},{Roles.Manager}")]
         public async Task<ActionResult<TimesheetDto>> RejectTimesheet(int id, [FromBody] RejectTimesheetRequest request)
         {
-            var (employeeId, userId, fullName) = ExtractClaims();
+            var (employeeId, userId, fullName) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
-            var timesheet = await _timesheetService.RejectTimesheetAsync(id, employeeId.Value, request.Reason, userId, fullName);
+            var timesheet = await _timesheetService.RejectTimesheetAsync(
+                id, employeeId.Value, request.Reason, userId, fullName);
+
             return Ok(timesheet.ToDto());
         }
 
@@ -155,7 +166,7 @@ namespace HRMS.API.Controllers
         [HttpGet("{id:int}/export")]
         public async Task<IActionResult> ExportTimesheet(int id)
         {
-            var (employeeId, _, _) = ExtractClaims();
+            var (employeeId, _, _) = await ResolveClaimsAsync();
             if (employeeId == null) return Forbid();
 
             var timesheet = await _timesheetService.GetTimesheetByIdAsync(id);
@@ -180,15 +191,14 @@ namespace HRMS.API.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.HR},{Roles.Finance}")]
         public async Task<ActionResult<TimesheetDto>> LockTimesheet(int id)
         {
-            var (_, userId, fullName) = ExtractClaims();
-
+            var (_, userId, fullName) = await ResolveClaimsAsync();
             var timesheet = await _timesheetService.LockTimesheetAsync(id, userId, fullName);
             return Ok(timesheet.ToDto());
         }
 
         // ──────────────────────────── helpers ────────────────────────────
 
-        private (int? EmployeeId, string UserId, string FullName) ExtractClaims()
+        private async Task<(int? EmployeeId, string UserId, string FullName)> ResolveClaimsAsync()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
             var firstName = User.FindFirstValue(ClaimTypes.GivenName) ?? string.Empty;
@@ -197,10 +207,12 @@ namespace HRMS.API.Controllers
             if (string.IsNullOrWhiteSpace(fullName))
                 fullName = User.FindFirstValue(ClaimTypes.Name) ?? userId;
 
-            if (!int.TryParse(User.FindFirstValue("EmployeeId"), out var employeeId))
+            var employeeStringId = User.FindFirstValue("EmployeeId");
+            if (string.IsNullOrEmpty(employeeStringId))
                 return (null, userId, fullName);
 
-            return (employeeId, userId, fullName);
+            var employee = await _employeeRepository.GetByEmployeeIdAsync(employeeStringId);
+            return (employee?.Id, userId, fullName);
         }
     }
 }

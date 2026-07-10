@@ -18,20 +18,20 @@ namespace HRMS.API.Controllers
             _authService = authService;
         }
 
-        [HttpPost("register")]
-        public async Task<ActionResult<AuthTokenResponseDto>> Register([FromBody] RegisterModel model)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        // [HttpPost("register")]
+        // public async Task<ActionResult<AuthTokenResponseDto>> Register([FromBody] RegisterModel model)
+        // {
+        //     if (!ModelState.IsValid)
+        //         return BadRequest(ModelState);
 
-            var result = await _authService.RegisterAsync(model);
-            if (!result.Success)
-            {
-                return BadRequest((result.ErrorMessage ?? "Registration failed.").ToMessageDto());
-            }
+        //     var result = await _authService.RegisterAsync(model);
+        //     if (!result.Success)
+        //     {
+        //         return BadRequest((result.ErrorMessage ?? "Registration failed.").ToMessageDto());
+        //     }
 
-            return Ok(new AuthTokenResponseDto { Token = result.Token, Message = "Registration successful" });
-        }
+        //     return Ok(new AuthTokenResponseDto { Token = result.Token, Message = "Registration successful" });
+        // }
 
         [HttpPost("login")]
         public async Task<ActionResult<AuthSessionDto>> Login([FromBody] LoginModel model)

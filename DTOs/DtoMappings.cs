@@ -93,7 +93,48 @@ namespace HRMS.API.DTOs
             Status = attendance.Status,
             Notes = attendance.Notes,
             Location = attendance.Location,
+            DeviceId = attendance.DeviceId,
+            CheckInLatitude = attendance.CheckInLatitude,
+            CheckInLongitude = attendance.CheckInLongitude,
+            WorkLocationId = attendance.WorkLocationId,
             Employee = attendance.Employee.ToEmployeeSummaryDto(),
+        };
+
+        public static WorkLocationDto ToDto(this WorkLocation location) => new()
+        {
+            Id = location.Id,
+            Name = location.Name,
+            Address = location.Address,
+            Latitude = location.Latitude,
+            Longitude = location.Longitude,
+            AllowedRadiusMeters = location.AllowedRadiusMeters,
+            IsActive = location.IsActive,
+            CreatedAt = location.CreatedAt,
+            UpdatedAt = location.UpdatedAt,
+        };
+
+        public static EmployeeWorkLocationDto ToDto(this EmployeeWorkLocation ewl) => new()
+        {
+            Id = ewl.Id,
+            EmployeeId = ewl.EmployeeId,
+            WorkLocationId = ewl.WorkLocationId,
+            IsActive = ewl.IsActive,
+            AssignedAt = ewl.AssignedAt,
+            WorkLocation = ewl.WorkLocation?.ToDto(),
+            Employee = ewl.Employee.ToEmployeeSummaryDto(),
+        };
+
+        public static EmployeeDeviceDto ToDto(this EmployeeDevice device) => new()
+        {
+            Id = device.Id,
+            EmployeeId = device.EmployeeId,
+            DeviceId = device.DeviceId,
+            DeviceName = device.DeviceName,
+            DeviceType = device.DeviceType,
+            IsActive = device.IsActive,
+            RegisteredAt = device.RegisteredAt,
+            LastUsedAt = device.LastUsedAt,
+            Employee = device.Employee.ToEmployeeSummaryDto(),
         };
 
         public static LeaveDto ToDto(this Leave leave) => new()
